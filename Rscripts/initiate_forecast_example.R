@@ -1,2 +1,3 @@
 source('/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/Rscripts/EnKF_GLM_wNOAAens_V2.R')
-run_forecast(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,restart_file = NA)
+run_forecast(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 1,restart_file = NA)
+run_forecast(first_day= '2018-07-07 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,restart_file = '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Forecasts/forecast_2018_7_6_2018720_15_32/restart_2018_7_7.csv')

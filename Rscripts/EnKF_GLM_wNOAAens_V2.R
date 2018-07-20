@@ -310,6 +310,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #THIS ALLOWS THE EnKF TO BE RESTARTED FROM YESTERDAY'S RUN
   if(restart_present){
+    print('Using restart file')
     x_previous <- read.csv(restart_file)
   }else{
     x_previous <- read.csv(paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
@@ -371,7 +372,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       }
       
       if(i == (hist_days+1)){
-        write.csv(x[1-1,,],paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'.csv'),row.names = FALSE)
+        write.csv(x[i-1,,],paste0(workingGLM,'restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv'),row.names = FALSE)
       }
       
       #3) Use GLM NML files to run GLM for a day
