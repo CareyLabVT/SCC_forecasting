@@ -1,27 +1,27 @@
 
-extract_temp_chain <- function(fname){
-d <- read.csv(fname, skip =3)
-d_names <- read.csv(fname, skip =1)
-names(d) <- names(d_names)
-
-obs <- array(NA,dim=c(length(full_time),10))
-depths <- c(0.1,1,2,3,4,5,6,7,8,9)
-
-d$TIMESTAMP <- as.POSIXct(d$TIMESTAMP)
-full_time <- as.POSIXct(full_time)
-for(i in 1:length(full_time)){
-  index = which(d$TIMESTAMP==full_time[i])
+extract_temp_chain <- function(fname,full_time){
+  d <- read.csv(fname, skip =3)
+  d_names <- read.csv(fname, skip =1)
+  names(d) <- names(d_names)
   
-  if(length(index)>0){
-  obs[i,] <- unlist(d[index,5:14])
+  obs <- array(NA,dim=c(length(full_time),10))
+  depths <- c(0.1,1,2,3,4,5,6,7,8,9)
+  
+  d$TIMESTAMP <- as.POSIXct(d$TIMESTAMP)
+  full_time <- as.POSIXct(full_time)
+  for(i in 1:length(full_time)){
+    index = which(d$TIMESTAMP==full_time[i])
+    
+    if(length(index)>0){
+      obs[i,] <- unlist(d[index,5:14])
+    }
   }
+  
+  return(list(obs = obs, depths = depths))
 }
 
-return(list(obs = obs, depths = depths))
-}
 
-
-extract_do_chain <- function(fname = catwalk_fname){
+extract_do_chain <- function(fname = catwalk_fname,full_time){
   d <- read.csv(fname, skip =3)
   d_names <- read.csv(fname, skip =1)
   names(d) <- names(d_names)

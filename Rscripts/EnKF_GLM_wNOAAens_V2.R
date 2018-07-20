@@ -8,7 +8,7 @@ library(lubridate)
 
 ###### OPTIONS ######
 
-run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 5){
+run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 5, restart_file = NA){
   
   ###RUN OPTIONS
   Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -18,12 +18,11 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   use_CTD <- FALSE
   include_wq <- FALSE
-  cold_start <- TRUE
   NO_UNCERT <- FALSE
   ADD_NOISE_TO_OBS <- FALSE
   USE_OBS_DEPTHS <- FALSE
   USE_OBS_CONTRAINT <- TRUE
-
+  
   ###CREATE TIME VECTOR
   begin_sim  <- as.POSIXct(first_day)
   total_days <- hist_days + forecast_days
@@ -48,6 +47,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE
   workingGLM <- paste0(Folder,'/GLM_working/')  
+  print(workingGLM)
   unlink(paste0(workingGLM,'*'),recursive = FALSE)    #Clear out temp GLM working directory
   
   ###LOAD SHARE R FUNCTIONS
@@ -76,7 +76,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'FCRmet.csv'))
   download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'Catwalk.csv'))
   download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,forecast_base_name,'.csv'))
-
+  
   ###CREATE HISTORICAL MET FILE
   obs_met_outfile <- paste0(workingGLM,'GLM_met.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
@@ -92,11 +92,14 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   }
   spillway_outflow_file_name <- paste0('FCR_spillway_outflow_',forecast_base_name,'.csv')
   inflow_file_name <- paste0('FCR_inflow_',forecast_base_name,'.csv')
-
+  
   ###MOVE FILES AROUND
   SimFilesFolder <- paste0(Folder,'/sim_files/')
   fl <- c(list.files(SimFilesFolder, full.names = TRUE))
   tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
+  if(!is.na(restart_file)){
+    tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
+  }
   
   ###SET UP RUN
   lake_depth_init <- 10.0
@@ -129,13 +132,13 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #PROCESS TEMPERATURE OBSERVATIONS
   if(!use_CTD){
-    obs_temp <- extract_temp_chain(fname = catwalk_fname)
+    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
   }else{
     obs_temp <- extract_temp_CTD(fname = ctd_fname)
   }
   
   #mg/L (obs) -> mol/m3 * 31.25
-  obs_do <- extract_do_chain(fname = catwalk_fname)
+  obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
   
   #KLUDGE TO GET WORKING
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
@@ -274,10 +277,15 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   psi <- rep(0.0001,length(obs_index))
   
   ### INITILIZE FIRST TIME STEP
-  restart_present <- file.exists(paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'.csv'))
+  restart_present <- FALSE
+  if(!is.na(restart_file)){
+    if(file.exists(restart_file)){
+    restart_present <- TRUE
+    }
+  }
   x <- array(NA,dim=c(nsteps,nmembers,nstates))
   #Initial conditions
-  if(cold_start){
+  if(!restart_present){
     if(include_wq){
       x <- array(NA,dim=c(nsteps,nmembers,nstates))
       x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,do_init), sigma=as.matrix(Qt_init))
@@ -302,7 +310,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #THIS ALLOWS THE EnKF TO BE RESTARTED FROM YESTERDAY'S RUN
   if(restart_present){
-    x_previous <- read.csv(paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'.csv'))
+    x_previous <- read.csv(restart_file)
   }else{
     x_previous <- read.csv(paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
   }
@@ -321,7 +329,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   #dit_star = array(NA,dim=c(nmembers,nstates)) #Adaptive noise estimation
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
-
+  
   ###START EnKF
   met_index <- 1
   for(i in 2:nsteps){
@@ -392,9 +400,8 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     x_corr <- x_star + NQt
     
     #Obs for time step
-    print(c(i,dim(z)))
     z_index <- which(!is.na(z[i,]))
-
+    
     
     #if no observations at a time step then just propogate model uncertainity
     if(length(z_index) == 0 | i > (hist_days+1)){
@@ -621,7 +628,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   dir.create(forecast_archive_dir)
   files <- list.files(paste0(workingGLM))
   tmp <- file.copy(files, forecast_archive_dir)
-
+  
 }
 
 
