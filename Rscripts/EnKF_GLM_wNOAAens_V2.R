@@ -260,14 +260,14 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   cross_var <-0.0
   Qt_init <- diag(temps_variance_init, nstates)
   Qt <- diag(temps_variance, nstates)
-  for(i in 1:nstates){
-    if(i == 1){
-      Qt[i,i+1] <- cross_var
-    }else if(i == nstates){
-      Qt[i,i-1] <- cross_var
+  for(s in 1:nstates){
+    if(s == 1){
+      Qt[s,s+1] <- cross_var
+    }else if(s == nstates){
+      Qt[s,s-1] <- cross_var
     }else{
-      Qt[i,i-1] <- cross_var
-      Qt[i,i+1] <- cross_var
+      Qt[s,s-1] <- cross_var
+      Qt[s,s+1] <- cross_var
     }
   }
   #Measurement error 
@@ -392,7 +392,9 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     x_corr <- x_star + NQt
     
     #Obs for time step
+    print(c(i,dim(z)))
     z_index <- which(!is.na(z[i,]))
+
     
     #if no observations at a time step then just propogate model uncertainity
     if(length(z_index) == 0 | i > (hist_days+1)){
@@ -593,18 +595,19 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   ###PLOT HISTOGRAMS OF FORECAST
   par(mfrow=c(3,2))
-  if(forecast_days > 12){
-    hist(x[nsteps,,1],main='surface temperature 13 days in the future',xlab='Temperature')
-    hist(x[nsteps,,1]-x[1,,1],main='surface temperature change 13 days in the future',xlab='Temperature')
-    hist(x[nsteps,,10],main='4m temperature 13 days in the future',xlab='Temperature')
+  if(forecast_days > 13){
+    hist(x[1+hist_days+14,,1],main='surface temperature 14 days in the future',xlab='Temperature')
+    abline(v= z[1+hist_days+14,obs_index[1]],col='red')
+    #hist(x[hist_days+14,,1]-x[1,,1],main='surface temperature change 14 days in the future',xlab='Temperature')
+    hist(x[1+hist_days+14,,10],main='4m temperature 14 days in the future',xlab='Temperature')
   }
-  if(forecast_days > 3){
-    hist(x[hist_days+4,,1],main='surface temperature 4 days in the future',xlab='Temperature')
-    abline(v= z[hist_days+4,obs_index[1]],col='red')
-    hist(x[hist_days+4,,1]-x[1,,1],main='surface temperature change 4 days in the future',xlab='Temperature')
-    abline(v= z[hist_days+4,obs_index[1]]-21.8,col='red')
-    hist(x[hist_days+4,,10],main='4m temperature 4 days in the future',xlab='Temperature')
-    abline(v= z[hist_days+4,4],col='red')
+  if(forecast_days > 6){
+    hist(x[1+hist_days+7,,1],main='surface temperature 7 days in the future',xlab='Temperature')
+    abline(v= z[1+hist_days+7,obs_index[1]],col='red')
+    #hist(x[hist_days+4,,1]-x[1,,1],main='surface temperature change 7 days in the future',xlab='Temperature')
+    #abline(v= z[hist_days+4,obs_index[1]]-21.8,col='red')
+    hist(x[1+hist_days+7,,10],main='4m temperature 7 days in the future',xlab='Temperature')
+    abline(v= z[1+hist_days+7,4],col='red')
   }
   
   dev.off()
