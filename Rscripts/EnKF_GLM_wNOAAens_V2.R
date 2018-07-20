@@ -9,15 +9,18 @@ library(lubridate)
 ###### OPTIONS ######
 
 run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 5){
-  Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/new_structure/'
-
-  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv','/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/new_structure/sim_files/FCRmet.csv')
-  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv','/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/new_structure/sim_files/Catwalk.csv')
+  Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
+  workingGLM = paste0(Folder,'/GLM_working/')
+  #Clear out temp GLM working directory
+  unlink(paste0(workingGLM,'*'),recursive = FALSE)
   
-  catwalk_fname <-  '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/Catwalk.csv'
-  met_obs_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/FCRmet.csv'
+  
+  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'FCRmet.csv'))
+  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'Catwalk.csv'))
+  
+  catwalk_fname <-  paste0(workingGLM,'Catwalk.csv')
+  met_obs_fname <-paste0(workingGLM,'FCRmet.csv')
   ctd_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/070218_fcr50.csv'
-  #forecast_base_name = '20180628gep_all_00z'
   begin_sim  = as.POSIXct(first_day)
   total_days = hist_days + forecast_days
   #end_sim = as.POSIXct('2018-07-09 00:00:00')
@@ -27,7 +30,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   include_wq = FALSE
   
   
-
+  
   #See table 1 in Rastetter et al. 2010
   nEnKFmembers = 4
   nMETmembers = 21
@@ -46,10 +49,10 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     forecast_month = paste0(month(forecast_start_time))
   }
   
-
+  
   
   forecast_base_name = paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z',sep='')
-  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/new_structure/sim_files/',forecast_base_name,'.csv'))
+  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,forecast_base_name,'.csv'))
   
   met_base_file_name = paste0('met_hourly_',forecast_base_name,'_ens')
   
@@ -114,20 +117,18 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   # MOVE FILES AROUND 
   SimFilesFolder = paste0(Folder,'/sim_files/')
-  workingGLM = paste0(Folder,'/GLM_working/')
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
   Sys.setenv(PATH='/opt/local/bin:/opt/local/sbin:/Users/quinn/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/local/bin')
   
   #system(paste('export DYLD_FALLBACK_LIBRARY_PATH=~',pathGLM,'/glm_lib_files:$DYLD_FALLBACK_LIBRARY_PATH',sep=''))
   
-  #Clear out temp GLM working directory
-  unlink(paste0(workingGLM,'*'),recursive = FALSE)
+  
   
   #CREATE MET FILE
   obs_met_outfile <- paste0(workingGLM,'GLM_met.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
   
-  in_directory <- paste0(Folder,'/sim_files/')
+  in_directory <- workingGLM
   out_directory <- workingGLM
   file_name <- forecast_base_name
   process_GEFS2GLM(in_directory,out_directory,file_name)
@@ -378,7 +379,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
         update_var(paste0('FCR_inflow_',forecast_base_name,'.csv'),origNML,'inflow_fl')
         origNML = read_nml(file.path(workingGLM,'glm3.nml'))
         update_var(paste0('FCR_spillway_outflow_',forecast_base_name,'.csv'),origNML,'outflow_fl')
-       
+        
       }
       
       if(i == (hist_days+1)){
@@ -421,7 +422,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       }
       
     }else{
-
+      
       #if observation then calucate Kalman adjustment
       zt = z[i,z_index]
       z_states_t = z_states[i,z_index]
@@ -506,9 +507,9 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   
   #SAVE FORECAST
-  save(x,full_time,the_depths_init,file = paste0(Folder,'/GLM_working/',sim_name,'_EnKF_output.Rdata'))
+  save(x,full_time,the_depths_init,file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
   
-  load(file = paste0(Folder,'/GLM_working/',sim_name,'_EnKF_output.Rdata'))
+  load(file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
   
   #GET NOAA AIR TEMPERATURE
   d = read.csv(paste0(workingGLM,'met_hourly_',forecast_base_name,'_ens1.csv'))
@@ -530,7 +531,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   }
   
   #PLOT FORECAST
-  pdf(paste0(Folder,'/GLM_working/',sim_name,'_EnKF_output.pdf'))
+  pdf(paste0(workingGLM,sim_name,'_EnKF_output.pdf'))
   par(mfrow=c(4,3))
   
   z = z_obs
@@ -543,20 +544,20 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       obs = NA
     }
     #if(!is.na(obs)){
-      ylim = range(c(x[,,],c(z[,])),na.rm = TRUE)
-      as.POSIXct(full_time)
-      plot(as.POSIXct(full_time_day),x[,1,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',the_depths_init[i],' m',sep=''),ylim=ylim)
-      if(nmembers > 1){
-        for(m in 2:nmembers){
-          points(as.POSIXct(full_time_day),x[,m,model],type='l')
-        }
+    ylim = range(c(x[,,],c(z[,])),na.rm = TRUE)
+    as.POSIXct(full_time)
+    plot(as.POSIXct(full_time_day),x[,1,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',the_depths_init[i],' m',sep=''),ylim=ylim)
+    if(nmembers > 1){
+      for(m in 2:nmembers){
+        points(as.POSIXct(full_time_day),x[,m,model],type='l')
       }
-      
-      if(!is.na(obs)){
-        tmp = z[,obs]
-        tmp[is.na(tmp)] = -999
-        points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
-      }
+    }
+    
+    if(!is.na(obs)){
+      tmp = z[,obs]
+      tmp[is.na(tmp)] = -999
+      points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
+    }
     #}
   }
   
@@ -626,10 +627,15 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   dev.off()
   
+  unlink(paste0(workingGLM,'FCRmet.csv'),recursive = FALSE)
+  unlink(paste0(workingGLM,'Catwalk.csv'),recursive = FALSE)
+  unlink(paste0(workingGLM,'20180711gep_all_00z.csv'),recursive = FALSE)
+  
   forecast_archive_dir <- paste0(Folder,'/Forecasts/','forecast_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))
   dir.create(forecast_archive_dir)
-  files <- list.files(paste0(Folder,'/GLM_working/'))
+  files <- list.files(paste0(workingGLM))
   file.copy(files, forecast_archive_dir)
+  
 }
 
 
