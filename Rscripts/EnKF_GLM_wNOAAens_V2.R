@@ -602,21 +602,30 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   }
   
   ###PLOT HISTOGRAMS OF FORECAST
-  par(mfrow=c(3,2))
-  if(forecast_days > 13){
-    hist(x[1+hist_days+14,,1],main='surface temperature 14 days in the future',xlab='Temperature')
-    abline(v= z[1+hist_days+14,obs_index[1]],col='red')
-    #hist(x[hist_days+14,,1]-x[1,,1],main='surface temperature change 14 days in the future',xlab='Temperature')
-    hist(x[1+hist_days+14,,10],main='4m temperature 14 days in the future',xlab='Temperature')
-  }
+  par(mfrow=c(2,3))
   if(forecast_days > 6){
-    hist(x[1+hist_days+7,,1],main='surface temperature 7 days in the future',xlab='Temperature')
-    abline(v= z[1+hist_days+7,obs_index[1]],col='red')
-    #hist(x[hist_days+4,,1]-x[1,,1],main='surface temperature change 7 days in the future',xlab='Temperature')
-    #abline(v= z[hist_days+4,obs_index[1]]-21.8,col='red')
-    hist(x[1+hist_days+7,,10],main='4m temperature 7 days in the future',xlab='Temperature')
-    abline(v= z[1+hist_days+7,4],col='red')
+    xlim<- range(c(x[1+hist_days+7,,obs_index[1]],z[1+hist_days+7,1]))
+    hist(x[1+hist_days+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+7,1],col='red')
+    xlim<- range(c(x[1+hist_days+7,,obs_index[5]],z[1+hist_days+7,5]))
+    hist(x[1+hist_days+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+7,5],col='red')
+    xlim<- range(c(x[1+hist_days+7,,obs_index[10]],z[1+hist_days+7,10]))
+    hist(x[1+hist_days+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+7,10],col='red')
   }
+  if(forecast_days > 13){
+    xlim<- range(c(x[1+hist_days+14,,obs_index[1]],z[1+hist_days+14,1]))
+    hist(x[1+hist_days+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+14,1],col='red')
+    xlim<- range(c(x[1+hist_days+14,,obs_index[5]],z[1+hist_days+14,5]))
+    hist(x[1+hist_days+14,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+14,5],col='red')
+    xlim<- range(c(x[1+hist_days+14,,obs_index[10]],z[1+hist_days+14,10]))
+    hist(x[1+hist_days+14,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[1+hist_days+14,10],col='red')
+  }
+
   
   dev.off()
   
