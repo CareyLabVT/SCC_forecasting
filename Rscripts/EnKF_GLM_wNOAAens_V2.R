@@ -17,7 +17,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   nmembers = nEnKFmembers*nMETmembers
   
   use_CTD <- FALSE
-  include_wq <- FALSE
+  include_wq <- TRUE
   NO_UNCERT <- FALSE
   ADD_NOISE_TO_OBS <- FALSE
   USE_OBS_DEPTHS <- FALSE
@@ -102,6 +102,8 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   }
   
   ###SET UP RUN
+  num_wq <- 1
+  
   lake_depth_init <- 10.0
   the_sals_init <- 0.5
   OGM_doc_init <- 47.4
@@ -139,7 +141,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #mg/L (obs) -> mol/m3 * 31.25
   obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
-  
+
   #KLUDGE TO GET WORKING
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
   init_temps1 <- obs_temp$obs[1,]
@@ -215,7 +217,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
-    nstates <- nlayers_init*num_wq
+    nstates <- nlayers_init*(1+num_wq)
   }else{
     nstates <- nlayers_init 
   }
@@ -402,7 +404,6 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     
     #Obs for time step
     z_index <- which(!is.na(z[i,]))
-    
     
     #if no observations at a time step then just propogate model uncertainity
     if(length(z_index) == 0 | i > (hist_days+1)){
