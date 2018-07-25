@@ -56,6 +56,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   source(paste0(Folder,'/Rscripts/extract_temp_chain.R'))
   source(paste0(Folder,'/Rscripts/process_GEFS2GLM_v2.R'))
   source(paste0(Folder,'/Rscripts/extract_temp_CTD.R'))
+  source(paste0(Folder,'/Rscripts/create_inflow_outflow_file.R'))
   
   ###SHARED GLM LIBRARIES
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
@@ -90,8 +91,8 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   for(i in 1:nMETmembers){
     met_file_names[i] <- paste(met_base_file_name,i,'.csv',sep='')
   }
-  spillway_outflow_file_name <- paste0('FCR_spillway_outflow_',forecast_base_name,'.csv')
-  inflow_file_name <- paste0('FCR_inflow_',forecast_base_name,'.csv')
+  #spillway_outflow_file_name <- paste0('FCR_spillway_outflow_',forecast_base_name,'.csv')
+  #inflow_file_name <- paste0('FCR_inflow_',forecast_base_name,'.csv')
   
   ###MOVE FILES AROUND
   SimFilesFolder <- paste0(Folder,'/sim_files/')
@@ -100,6 +101,10 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   if(!is.na(restart_file)){
     tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
   }
+  
+  ##CREATE INFLOW AND OUTFILE FILES
+  #need to fix - this is just a place holder
+  create_inflow_outflow_file(full_time)
   
   if(include_wq){
     file.copy(from = paste0(workingGLM,'glm3_wAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
@@ -366,17 +371,19 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
+        sw_factor <- 0.75
+        lw_factor <- 1
+        at_factor <- 1
+        update_var(sw_factor,origNML,'sw_factor')
+        update_var(lw_factor,origNML,'lw_factor')
+        update_var(at_factor,origNML,'at_factor')
         update_var(met_file_names[met_index],origNML,'meteo_fl')
-        origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
-        update_var(paste0('FCR_inflow_',forecast_base_name,'.csv'),origNML,'inflow_fl')
-        origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
-        update_var(paste0('FCR_spillway_outflow_',forecast_base_name,'.csv'),origNML,'outflow_fl')
+        update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
+        update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
       }else{
         update_var(obs_met_outfile,origNML,'meteo_fl')
-        origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
-        update_var(paste0('FCR_inflow_',forecast_base_name,'.csv'),origNML,'inflow_fl')
-        origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
-        update_var(paste0('FCR_spillway_outflow_',forecast_base_name,'.csv'),origNML,'outflow_fl')
+        update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
+        update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
         
       }
       
@@ -385,7 +392,6 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       }
       
       #3) Use GLM NML files to run GLM for a day
-      origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
       system(paste0(workingGLM,"/glm"))
       
       #4) Fill x_star with temperatures from GLM
@@ -612,24 +618,24 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   ###PLOT HISTOGRAMS OF FORECAST
   par(mfrow=c(2,3))
   if(forecast_days > 6){
-    xlim<- range(c(x[1+hist_days+7,,obs_index[1]],z[1+hist_days+7,1]))
+    xlim<- range(c(x[1+hist_days+7,,obs_index[1]],z[1+hist_days+7,1]),na.rm = TRUE)
     hist(x[1+hist_days+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+7,1],col='red')
-    xlim<- range(c(x[1+hist_days+7,,obs_index[5]],z[1+hist_days+7,5]))
+    xlim<- range(c(x[1+hist_days+7,,obs_index[5]],z[1+hist_days+7,5]),na.rm = TRUE)
     hist(x[1+hist_days+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+7,5],col='red')
-    xlim<- range(c(x[1+hist_days+7,,obs_index[10]],z[1+hist_days+7,10]))
+    xlim<- range(c(x[1+hist_days+7,,obs_index[10]],z[1+hist_days+7,10]),na.rm = TRUE)
     hist(x[1+hist_days+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+7,10],col='red')
   }
   if(forecast_days > 13){
-    xlim<- range(c(x[1+hist_days+14,,obs_index[1]],z[1+hist_days+14,1]))
+    xlim<- range(c(x[1+hist_days+14,,obs_index[1]],z[1+hist_days+14,1]),na.rm = TRUE)
     hist(x[1+hist_days+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,1],col='red')
-    xlim<- range(c(x[1+hist_days+14,,obs_index[5]],z[1+hist_days+14,5]))
+    xlim<- range(c(x[1+hist_days+14,,obs_index[5]],z[1+hist_days+14,5]),na.rm = TRUE)
     hist(x[1+hist_days+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,5],col='red')
-    xlim<- range(c(x[1+hist_days+14,,obs_index[10]],z[1+hist_days+14,10]))
+    xlim<- range(c(x[1+hist_days+14,,obs_index[10]],z[1+hist_days+14,10]),na.rm = TRUE)
     hist(x[1+hist_days+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,10],col='red')
   }

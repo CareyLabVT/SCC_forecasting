@@ -95,19 +95,19 @@ process_GEFS2GLM <- function(in_directory,out_directory,file_name){
     
     #### KLUDGE
     
-    full_time_day <- seq(begin_step, end_step, by = "1 day") # grid
-    force_tz(full_time_day, tzone = "EST")
+   # full_time_day <- seq(begin_step, end_step, by = "1 day") # grid
+  #  force_tz(full_time_day, tzone = "EST")
     
-    inflow = read.csv('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/FCR-GLM/SCC/Forecasting/GLM/FCR_inflow_2015_022317.csv')
-    spillway = read.csv('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/FCR-GLM/SCC/Forecasting/GLM/FCR_spillway_outflow_2015_021617.csv')
+   # inflow = read.csv('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/FCR-GLM/SCC/Forecasting/GLM/FCR_inflow_2015_022317.csv')
+  #  spillway = read.csv('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/FCR-GLM/SCC/Forecasting/GLM/FCR_spillway_outflow_2015_021617.csv')
     
-    inflow =  inflow[1:length(full_time_day),]
-    inflow$time =  full_time_day
+   # inflow =  inflow[1:length(full_time_day),]
+  #  inflow$time =  full_time_day
     
-    spillway = spillway[1:length(full_time_day),]
-    spillway$time =  strftime(full_time_day, format="%Y-%m-%d")
+   # spillway = spillway[1:length(full_time_day),]
+  #  spillway$time =  strftime(full_time_day, format="%Y-%m-%d")
     
-    write.csv(inflow,file = paste(out_directory,'FCR_inflow_',file_name,'.csv',sep=''),row.names = FALSE,quote = FALSE)
-    write.csv(spillway,file = paste(out_directory,'FCR_spillway_outflow_',file_name,'.csv',sep=''),row.names = FALSE,quote = FALSE)
+  #  write.csv(inflow,file = paste(out_directory,'FCR_inflow_',file_name,'.csv',sep=''),row.names = FALSE,quote = FALSE)
+  #  write.csv(spillway,file = paste(out_directory,'FCR_spillway_outflow_',file_name,'.csv',sep=''),row.names = FALSE,quote = FALSE)
   }
 }
