@@ -12,7 +12,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   ###RUN OPTIONS
   Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
-  nEnKFmembers <- 4
+  nEnKFmembers <- 20
   nMETmembers <- 21
   nmembers = nEnKFmembers*nMETmembers
   
