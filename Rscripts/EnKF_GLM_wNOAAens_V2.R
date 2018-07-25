@@ -17,7 +17,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   nmembers = nEnKFmembers*nMETmembers
   
   use_CTD <- FALSE
-  include_wq <- TRUE
+  include_wq <- FALSE
   NO_UNCERT <- FALSE
   ADD_NOISE_TO_OBS <- FALSE
   USE_OBS_DEPTHS <- FALSE
@@ -116,19 +116,19 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #Parameters
   Kw <- 0.86
-  coef_mix_conv <- 0.165
+  coef_mix_conv <- 0.2
   coef_wind_stir <- 0.23
   coef_mix_shear <- 0.2
   coef_mix_turb <- 0.51
   coef_mix_KH <- 0.3
   coef_mix_hyp <- 0.5
   wind_factor <- 1
-  sw_factor <- 0.7
+  sw_factor <- 1
   lw_factor <- 1
   at_factor <- 1
   rh_factor <- 1
   rain_factor <- 1
-  cd <- 0.000001
+  cd <- 0.0013
   ce <- 0.0013
   ch <- 0.0013
   
