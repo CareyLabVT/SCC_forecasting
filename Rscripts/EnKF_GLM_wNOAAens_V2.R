@@ -101,6 +101,13 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
   }
   
+  if(include_wq){
+    file.copy(from = paste0(workingGLM,'glm3_wAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+  }else{
+    file.copy(from = paste0(workingGLM,'glm3_woAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+    
+  }
+  
   ###SET UP RUN
   num_wq <- 1
   
@@ -620,10 +627,10 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     hist(x[1+hist_days+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,1],col='red')
     xlim<- range(c(x[1+hist_days+14,,obs_index[5]],z[1+hist_days+14,5]))
-    hist(x[1+hist_days+14,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    hist(x[1+hist_days+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,5],col='red')
     xlim<- range(c(x[1+hist_days+14,,obs_index[10]],z[1+hist_days+14,10]))
-    hist(x[1+hist_days+14,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    hist(x[1+hist_days+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
     abline(v= z[1+hist_days+14,10],col='red')
   }
 
