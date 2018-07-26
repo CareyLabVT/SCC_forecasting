@@ -393,7 +393,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       }
       
       #3) Use GLM NML files to run GLM for a day
-      system(paste0(workingGLM,"/glm"))
+      if(machine == 'mac'){
+        system(paste0(workingGLM,"/glm"))
+      }else if(machine == 'unix'){
+        system(paste0(workingGLM,"/glm.exe"))
+      }
       
       #4) Fill x_star with temperatures from GLM
       GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
