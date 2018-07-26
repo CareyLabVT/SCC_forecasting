@@ -1,17 +1,7 @@
-if (!"mvtnorm" %in% installed.packages()) install.packages("mvtnorm")
-if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4")
-if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
-library(mvtnorm)
-library(glmtools)
-library(ncdf4)
-library(lubridate)
-
-###### OPTIONS ######
-
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, machine = 'mac'){
   
   ###RUN OPTIONS
-  Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
+  #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
   nEnKFmembers <- 4
   nMETmembers <- 21
   nmembers = nEnKFmembers*nMETmembers
@@ -62,14 +52,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ###SHARED GLM LIBRARIES
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
-  Sys.setenv(PATH='/opt/local/bin:/opt/local/sbin:/Users/quinn/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/local/bin')
+  #Sys.setenv(PATH='/opt/local/bin:/opt/local/sbin:/Users/quinn/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/local/bin')
   #system(paste('export DYLD_FALLBACK_LIBRARY_PATH=~',pathGLM,'/glm_lib_files:$DYLD_FALLBACK_LIBRARY_PATH',sep=''))
   
   ###SET FILE NAMES
   forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z',sep='')
   catwalk_fname <-  paste0(workingGLM,'Catwalk.csv')
   met_obs_fname <-paste0(workingGLM,'FCRmet.csv')
-  ctd_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/070218_fcr50.csv' 
+  #ctd_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/070218_fcr50.csv' 
   met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
     sim_name <- paste0(year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))
@@ -99,7 +89,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ###MOVE FILES AROUND
   SimFilesFolder <- paste0(Folder,'/sim_files/')
+  if(machine == 'mac'){
+  GLM_folder <-  file.path(Folder,'glm/mac/') 
+  }else if(machine == 'unix'){
+    GLM_folder <- file.path(Folder,'glm/unix/') 
+  }
   fl <- c(list.files(SimFilesFolder, full.names = TRUE))
+  tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
+  fl <- c(list.files(GLM_folder, full.names = TRUE))
   tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
   if(!is.na(restart_file)){
     tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
@@ -151,11 +148,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   ch <- 0.0013
   
   #PROCESS TEMPERATURE OBSERVATIONS
-  if(!use_CTD){
+  #if(!use_CTD){
     obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
-  }else{
-    obs_temp <- extract_temp_CTD(fname = ctd_fname)
-  }
+  #}else{
+  #  obs_temp <- extract_temp_CTD(fname = ctd_fname)
+  #}
   
   #mg/L (obs) -> mol/m3 * 31.25
   obs_do <- extract_do_chain(fname = catwalk_fname,full_time)

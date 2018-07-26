@@ -32,6 +32,8 @@ plot_forecast <- function(workingGLM,sim_name){
       tmp[is.na(tmp)] = -999
       points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
     }
+    
+    abline(v = as.POSIXct(full_time_day[1+hist_days]))
     #}
   }
   

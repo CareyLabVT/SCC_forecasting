@@ -11,7 +11,6 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   
   dir.create(evaluation_folder)
   
-  
   full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   
