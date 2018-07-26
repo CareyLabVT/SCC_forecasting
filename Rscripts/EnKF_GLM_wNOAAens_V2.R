@@ -369,12 +369,9 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
-        sw_factor <- 0.75
-        lw_factor <- 1
-        at_factor <- 1
-        update_var(sw_factor,origNML,'sw_factor')
-        update_var(lw_factor,origNML,'lw_factor')
-        update_var(at_factor,origNML,'at_factor')
+        update_var(0.75,origNML,'sw_factor')
+        update_var(1,origNML,'lw_factor')
+        update_var(1,origNML,'at_factor')
         update_var(met_file_names[met_index],origNML,'meteo_fl')
         update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
         update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
@@ -516,6 +513,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   
   ###
+  update_var(sw_factor,origNML,'sw_factor')
   update_var(wq_init_vals,origNML,'wq_init_vals')
   update_var(rep(the_sals_init,nlayers_init),origNML,'the_sals')
   update_var(lake_depth_init,origNML,'lake_depth')
