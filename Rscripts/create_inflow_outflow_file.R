@@ -1,4 +1,4 @@
-create_inflow_outflow_file <- function(full_time_day){
+create_inflow_outflow_file <- function(full_time_day,workingGLM){
 
   full_time_day_2017 <- as.POSIXct(full_time_day) - 365*24*60*60
   full_time_day_2016 <- as.POSIXct(full_time_day) - 2*365*24*60*60
@@ -30,6 +30,6 @@ create_inflow_outflow_file <- function(full_time_day){
   spillway_new[,2] = rowMeans(cbind(spillway_2017[,2],spillway_2016[,2],spillway_2015[,2],spillway_2014[,2],spillway_2014[,2],spillway_2013[,2]))
   spillway_new$time =  full_time_day
   
-  write.csv(inflow_new,file = paste(out_directory,'FCR_inflow.csv',sep=''),row.names = FALSE,quote = FALSE)
-  write.csv(spillway_new,file = paste(out_directory,'FCR_spillway_outflow.csv',sep=''),row.names = FALSE,quote = FALSE)
+  write.csv(inflow_new,file = paste(workingGLM,'FCR_inflow.csv',sep=''),row.names = FALSE,quote = FALSE)
+  write.csv(spillway_new,file = paste(workingGLM,'FCR_spillway_outflow.csv',sep=''),row.names = FALSE,quote = FALSE)
 }

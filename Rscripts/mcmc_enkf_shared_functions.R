@@ -1,7 +1,7 @@
 #FUNCTIONS Shared between the MCMC and EnKF
 
 #Set GLM Initial conditions for temperature at each layer from first observations
-update_temps <- function(curr_temps,origNML,curr_depths){
+update_temps <- function(curr_temps,curr_depths,workingGLM){
   origNML = read_nml(file.path(workingGLM,'glm3.nml'))
   index1 = NA; index2 = NA;index3 = NA; index4 = NA
   for (g in 1:length(origNML)) {
@@ -32,7 +32,7 @@ update_temps <- function(curr_temps,origNML,curr_depths){
 }
 
 
-update_var <- function(var_value,origNML,var_name){
+update_var <- function(var_value,var_name,workingGLM){
   origNML = read_nml(file.path(workingGLM,'glm3.nml'))
   index1 = NA; index2 = NA
   for (g in 1:length(origNML)) {
@@ -49,7 +49,7 @@ update_var <- function(var_value,origNML,var_name){
   write_nml(origNML, file.path(workingGLM,'glm3.nml'))
 }
 
-update_time <- function(start_value,stop_value,origNML){
+update_time <- function(start_value,stop_value,workingGLM){
   origNML = read_nml(file.path(workingGLM,'glm3.nml'))
   index1 = NA; index2 = NA; index3 = NA; index4 = NA
   for (g in 1:length(origNML)) {

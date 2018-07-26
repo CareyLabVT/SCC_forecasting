@@ -8,7 +8,7 @@ library(lubridate)
 
 ###### OPTIONS ######
 
-run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 5, restart_file = NA){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA){
   
   ###RUN OPTIONS
   Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -72,7 +72,8 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   ctd_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/070218_fcr50.csv' 
   met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
-    sim_name <- paste0('historical_start_',year(first_day),'_',month(first_day),'_',day(first_day),'_forecast_start_',paste0(year(forecast_start_time),forecast_month,forecast_day))
+    sim_name <- paste0(year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))
+    #paste0('historical_start_',year(first_day),'_',month(first_day),'_',day(first_day),'_forecast_start_',paste0(year(forecast_start_time),forecast_month,forecast_day))
   }
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
@@ -106,7 +107,10 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   ##CREATE INFLOW AND OUTFILE FILES
   #need to fix - this is just a place holder
-  create_inflow_outflow_file(full_time)
+  #file.copy(from = paste0(forecast_folder,'FCR_weir_inflow_2013_2017_20180716.csv'), to = paste0(evaluation_folder,'FCR_weir_inflow_2013_2017_20180716.csv'),overwrite = TRUE)
+  #file.copy(from = paste0(forecast_folder,'FCR_spillway_outflow_2013_2017_20180716.csv'), to = paste0(evaluation_folder,'FCR_spillway_outflow_2013_2017_20180716.csv'),overwrite = TRUE)
+  
+  create_inflow_outflow_file(full_time,workingGLM)
   
   if(include_wq){
     file.copy(from = paste0(workingGLM,'glm3_wAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
@@ -205,29 +209,29 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   wq_init_vals <- c(rep(OGM_doc_init,nlayers_init),do_init,rep(CAR_dic_init,nlayers_init),rep(NIT_amm_init,nlayers_init),rep(NIT_nit_init,nlayers_init),rep(PHS_frp_init,nlayers_init),rep(CAR_ch4_init,nlayers_init),CYANOPCH1_init_depth)
-  update_var(wq_init_vals,origNML,'wq_init_vals')
-  update_var(rep(the_sals_init,nlayers_init),origNML,'the_sals')
-  update_var(lake_depth_init,origNML,'lake_depth')
-  update_var(nlayers_init,origNML,'num_depths')
-  update_var(the_temps_init,origNML,'the_temps')
-  update_var(the_depths_init,origNML,'the_depths')
+  update_var(wq_init_vals,'wq_init_vals',workingGLM)
+  update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
+  update_var(lake_depth_init,'lake_depth',workingGLM)
+  update_var(nlayers_init,'num_depths',workingGLM)
+  update_var(the_temps_init,'the_temps',workingGLM)
+  update_var(the_depths_init,'the_depths',workingGLM)
   
-  update_var(Kw,origNML,'Kw')
-  update_var(coef_mix_conv,origNML,'coef_mix_conv')
-  update_var(coef_wind_stir,origNML,'coef_wind_stir')
-  update_var(coef_mix_shear,origNML,'coef_mix_shear')
-  update_var(coef_mix_turb,origNML,'coef_mix_turb')
-  update_var(coef_mix_KH,origNML,'coef_mix_KH')
-  update_var(coef_mix_hyp,origNML,'coef_mix_hyp')
-  update_var(wind_factor,origNML,'wind_factor')
-  update_var(sw_factor,origNML,'sw_factor')
-  update_var(lw_factor,origNML,'lw_factor')
-  update_var(at_factor,origNML,'at_factor')
-  update_var(rh_factor,origNML,'rh_factor')
-  update_var(rain_factor,origNML,'rain_factor')
-  update_var(cd,origNML,'cd')
-  update_var(ce,origNML,'ce')
-  update_var(ch,origNML,'ch')
+  update_var(Kw,'Kw',workingGLM)
+  update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
+  update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
+  update_var(coef_mix_shear,'coef_mix_shear',workingGLM)
+  update_var(coef_mix_turb,'coef_mix_turb',workingGLM)
+  update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
+  update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
+  update_var(wind_factor,'wind_factor',workingGLM)
+  update_var(sw_factor,'sw_factor',workingGLM)
+  update_var(lw_factor,'lw_factor',workingGLM)
+  update_var(at_factor,'at_factor',workingGLM)
+  update_var(rh_factor,'rh_factor',workingGLM)
+  update_var(rain_factor,'rain_factor',workingGLM)
+  update_var(cd,'cd',workingGLM)
+  update_var(ce,'ce',workingGLM)
+  update_var(ch,'ch',workingGLM)
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
@@ -347,6 +351,8 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
   
+  file.copy(from = paste0(workingGLM,'glm3.nml'), to = paste0(workingGLM,'glm3_initial.nml'),overwrite = TRUE)
+  
   ###START EnKF
   met_index <- 1
   for(i in 2:nsteps){
@@ -354,7 +360,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     #1) Update GLM NML files to match the current day of the simulation
     curr_start <- (full_time[i-1])
     curr_stop <- (full_time[i])
-    update_time(start_value  = curr_start, stop_value = curr_stop,origNML)
+    update_time(start_value  = curr_start, stop_value = curr_stop,workingGLM)
     setwd(workingGLM)
     
     #Create array to hold GLM predictions for each ensemble
@@ -362,30 +368,31 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     for(m in 1:nmembers){
       
       #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
-      tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],origNML,the_depths_init)
+      tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       
       if(include_wq){
         wq_init_vals <- c(rep(OGM_doc_init,nlayers_init),x[i-1,m,do_start:do_end],rep(CAR_dic_init,nlayers_init),rep(NIT_amm_init,nlayers_init),rep(NIT_nit_init,nlayers_init),rep(PHS_frp_init,nlayers_init),rep(CAR_ch4_init,nlayers_init),CYANOPCH1_init_depth)
-        update_var(wq_init_vals,origNML,'wq_init_vals')
+        update_var(wq_init_vals,'wq_init_vals',workingGLM)
       }
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
-        update_var(0.75,origNML,'sw_factor')
-        update_var(1,origNML,'lw_factor')
-        update_var(1,origNML,'at_factor')
-        update_var(met_file_names[met_index],origNML,'meteo_fl')
-        update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
-        update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
+        update_var(0.75,'sw_factor',workingGLM)
+        update_var(1,'lw_factor',workingGLM)
+        update_var(1,'at_factor',workingGLM)
+        update_var(met_file_names[met_index],'meteo_fl',workingGLM)
+        update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+        update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
       }else{
-        update_var(obs_met_outfile,origNML,'meteo_fl')
-        update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
-        update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
+        update_var(obs_met_outfile,'meteo_fl',workingGLM)
+        update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+        update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
         
       }
       
       if(i == (hist_days+1)){
-        write.csv(x[i-1,,],paste0(workingGLM,'restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv'),row.names = FALSE)
+        restart_file_name <- paste0('restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv')
+        write.csv(x[i-1,,],paste0(workingGLM,restart_file_name),row.names = FALSE)
       }
       
       #3) Use GLM NML files to run GLM for a day
@@ -507,14 +514,15 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   }
   
   ###SAVE FORECAST
-  save(x,full_time,the_depths_init,z_obs,file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
-  
+  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
+
   ##PLOT FORECAST
   plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
 
   ##ARCHIVE FORECAST
-  archive_forecast()
+  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time)
   
+  return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
 }
 
 

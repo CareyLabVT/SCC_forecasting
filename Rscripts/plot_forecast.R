@@ -7,6 +7,9 @@ plot_forecast <- function(workingGLM,sim_name){
   par(mfrow=c(4,3))
   
   z = z_obs
+  nmembers = dim(x)[2]
+  z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol =length(full_time)))
+  nMETmembers =21
   
   for(i in 1:nlayers_init){
     model = i
@@ -58,13 +61,15 @@ plot_forecast <- function(workingGLM,sim_name){
   }
   
   ###PLOT NOAA MET TO VIEWING 
-  d = read.csv(paste0(workingGLM,'met_hourly_',forecast_base_name,'_ens1.csv'))
+  d = read.csv(file.path(workingGLM,met_file_names[1]))
   air_temp = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   ShortWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   LongWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   RelHum = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   WindSpeed = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   Rain = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
+  
+  y <- as.POSIXct(d$time)
   
   for(ens in 1:nMETmembers){
     d = read.csv(paste0(workingGLM,met_file_names[ens]))
@@ -77,50 +82,50 @@ plot_forecast <- function(workingGLM,sim_name){
   }
   par(mfrow=c(2,3))
   ylim = range(c(air_temp))
-  plot((1:ncol(air_temp))/24,air_temp[1,],type='l',ylab='Air Temp',xlab = 'days in future',ylim=ylim)
+  plot(y,air_temp[1,],type='l',ylab='Air Temp',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(air_temp))/24,air_temp[m,],type='l')
+      points(y,air_temp[m,],type='l')
     }
   }
   
   ylim = range(c(ShortWave),na.rm = TRUE)
-  plot((1:ncol(ShortWave))/24,ShortWave[1,],type='l',ylab='Shortwave',xlab = 'days in future',ylim=ylim)
+  plot(y,ShortWave[1,],type='l',ylab='Shortwave',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(ShortWave))/24,ShortWave[m,],type='l')
+      points(y,ShortWave[m,],type='l')
     }
   }
   
   ylim = range(c(LongWave),na.rm = TRUE)
-  plot((1:ncol(LongWave))/24,LongWave[1,],type='l',ylab='Longwave',xlab = 'days in future',ylim=ylim)
+  plot(y,LongWave[1,],type='l',ylab='Longwave',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(LongWave))/24,LongWave[m,],type='l')
+      points(y,LongWave[m,],type='l')
     }
   }
   
   ylim = range(c(RelHum))
-  plot((1:ncol(RelHum))/24,RelHum[1,],type='l',ylab='Rel Hum',xlab = 'days in future',ylim=ylim)
+  plot(y,RelHum[1,],type='l',ylab='Rel Hum',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(RelHum))/24,RelHum[m,],type='l')
+      points(y,RelHum[m,],type='l')
     }
   }
   
   ylim = range(c(WindSpeed))
-  plot((1:ncol(WindSpeed))/24,WindSpeed[1,],type='l',ylab='Wind Speed',xlab = 'days in future',ylim=ylim)
+  plot(y,WindSpeed[1,],type='l',ylab='Wind Speed',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(WindSpeed))/24,WindSpeed[m,],type='l')
+      points(y,WindSpeed[m,],type='l')
     }
   }
   
   ylim = range(c(Rain),na.rm = TRUE)
-  plot((1:ncol(Rain))/24,Rain[1,],type='l',ylab='Rain',xlab = 'days in future',ylim=ylim)
+  plot(y,Rain[1,],type='l',ylab='Rain',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
-      points((1:ncol(Rain))/24,Rain[m,],type='l')
+      points(y,Rain[m,],type='l')
     }
   }
   
