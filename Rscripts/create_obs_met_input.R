@@ -47,12 +47,24 @@ create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
     Snow[i] = 0
     }
   }
+    
+  remove_hours <- which(!is.na(AirTemp))
+  
+  ShortWave = ShortWave[remove_hours]
+  LongWave = LongWave[remove_hours]
+  AirTemp = AirTemp[remove_hours]
+  RelHum = RelHum[remove_hours]
+  WindSpeed= WindSpeed[remove_hours]
+  Rain = Rain[remove_hours]
+  Snow = Snow[remove_hours]
+  full_time_hour_obs = full_time_hour_obs[remove_hours]
+  
   
   #GMT to EST conversion
   #force_tz(full_time_hour_obs, tzone = "EST")
   #Save in GLM Format
   full_time_hour_obs = strftime(full_time_hour_obs, format="%Y-%m-%d %H:%M")
-  GLM_climate = data.frame(full_time_hour_obs[1:length(full_time_hour_obs)-1],ShortWave,LongWave,AirTemp,RelHum,WindSpeed,Rain,Snow)
+  GLM_climate = data.frame(full_time_hour_obs,ShortWave,LongWave,AirTemp,RelHum,WindSpeed,Rain,Snow)
   n= noquote(c('time','ShortWave','LongWave','AirTemp','RelHum','WindSpeed','Rain','Snow'))
   colnames(GLM_climate) = noquote(c('time','ShortWave','LongWave','AirTemp','RelHum','WindSpeed','Rain','Snow'))
   write.csv(GLM_climate,file = outfile,row.names = FALSE,quote = FALSE)

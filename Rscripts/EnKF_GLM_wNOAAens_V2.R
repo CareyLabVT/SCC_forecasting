@@ -42,7 +42,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
   full_time <- strftime(full_time, format="%Y-%m-%d %H:%M")
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
-  full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[1+hist_days]), by = "1 hour") # grid
+  full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
   nsteps <- length(full_time)
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE
@@ -353,8 +353,6 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
     curr_start <- (full_time[i-1])
     curr_stop <- (full_time[i])
     update_time(start_value  = curr_start, stop_value = curr_stop,origNML)
-    origNML <- read_nml(file.path(workingGLM,'glm3.nml'))
-    
     setwd(workingGLM)
     
     #Create array to hold GLM predictions for each ensemble
@@ -516,6 +514,23 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   ###LOAD FORECAST FOR ANALYSIS
   load(file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
   
+  
+  ###
+  update_var(wq_init_vals,origNML,'wq_init_vals')
+  update_var(rep(the_sals_init,nlayers_init),origNML,'the_sals')
+  update_var(lake_depth_init,origNML,'lake_depth')
+  update_var(nlayers_init,origNML,'num_depths')
+  update_var(the_temps_init,origNML,'the_temps')
+  update_var(the_depths_init,origNML,'the_depths')
+  update_time(start_value  = full_time[1], stop_value = full_time[length(full_time)],origNML)
+  update_var(obs_met_outfile,origNML,'meteo_fl')
+  update_var(paste0('FCR_inflow.csv'),origNML,'inflow_fl')
+  update_var(paste0('FCR_spillway_outflow.csv'),origNML,'outflow_fl')
+  update_var(length(full_time),origNML,'num_days')
+  system(paste0(workingGLM,"/glm"))
+
+  glm_prediction <- get_temp(file = "output.nc", reference = "surface", z_out = the_depths_init)
+  
   ###PLOT FORECAST
   pdf(paste0(workingGLM,sim_name,'_EnKF_output.pdf'))
   par(mfrow=c(4,3))
@@ -538,12 +553,12 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
         points(as.POSIXct(full_time_day),x[,m,model],type='l')
       }
     }
-    
     if(!is.na(obs)){
       tmp = z[,obs]
       tmp[is.na(tmp)] = -999
       points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
     }
+    points(as.POSIXct(glm_prediction$DateTime),glm_prediction[,1+i],col='lightblue',type='o')
     #}
   }
   
