@@ -58,6 +58,7 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   source(paste0(Folder,'/Rscripts/extract_temp_CTD.R'))
   source(paste0(Folder,'/Rscripts/create_inflow_outflow_file.R'))
   source(paste0(Folder,'/Rscripts/plot_forecast.R'))
+  source(paste0(Folder,'/Rscripts/archive_forecast.R'))
   
   ###SHARED GLM LIBRARIES
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
@@ -508,17 +509,11 @@ run_forecast<-function(first_day= '2018-07-10 00:00:00', sim_name = NA, hist_day
   ###SAVE FORECAST
   save(x,full_time,the_depths_init,z_obs,file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
   
+  ##PLOT FORECAST
   plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
 
-  ###ARCHIVE AND CLEAN UP FORECAST
-  unlink(paste0(workingGLM,'FCRmet.csv'),recursive = FALSE)
-  unlink(paste0(workingGLM,'Catwalk.csv'),recursive = FALSE)
-  unlink(paste0(workingGLM,file_name,'.csv'),recursive = FALSE)
-  time_of_forecast <- paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
-  forecast_archive_dir <- paste0(Folder,'/Forecasts/','forecast_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_',time_of_forecast)
-  dir.create(forecast_archive_dir)
-  files <- list.files(paste0(workingGLM))
-  tmp <- file.copy(files, forecast_archive_dir)
+  ##ARCHIVE FORECAST
+  archive_forecast()
   
 }
 
