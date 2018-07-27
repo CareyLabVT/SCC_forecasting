@@ -6,10 +6,10 @@ library(glmtools)
 library(ncdf4)
 library(lubridate)
 
+Folder = getwd()
+
 source(paste0(Folder,'Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'Rscripts/evaluate_forecast.R'))
-
-Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 
 ## EXAMPLE LAUCHING A FORECAST
 out <- run_forecast(
