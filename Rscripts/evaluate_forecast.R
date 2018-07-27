@@ -104,9 +104,10 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
   update_var(length(full_time),'num_days',workingGLM)
   file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
+  fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
+  file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
   
   system(paste0(evaluation_folder,"/glm"))
-  
   glm_prediction <- get_temp(file = "output.nc", reference = "surface", z_out = the_depths_init)
   
   ###PLOT FORECAST
@@ -138,6 +139,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
       points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
     }
     points(as.POSIXct(glm_prediction$DateTime),glm_prediction[,1+i],col='lightblue',type='o')
+    abline(v = as.POSIXct(full_time_day[1+hist_days]))
     #}
   }
   
