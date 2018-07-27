@@ -1,4 +1,4 @@
-evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
+evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', machine = 'mac'){
   ###LOAD FORECAST FOR ANALYSIS
   #sim_name = '2018_7_6'
   #forecast_folder = 'forecast_2018_7_6_2018726_12_9'
@@ -25,11 +25,11 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   ###SET FILE NAMES
   catwalk_fname <-  paste0(evaluation_folder,'Catwalk.csv')
   met_obs_fname <-paste0(evaluation_folder,'FCRmet.csv')
-
+  
   ###DOWNLOAD FILES TO WORKING DIRECTORY
   download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(evaluation_folder,'FCRmet.csv'))
   download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(evaluation_folder,'Catwalk.csv'))
-
+  
   ###CREATE HISTORICAL MET FILE
   obs_met_outfile <- paste0(evaluation_folder,'GLM_met_eval.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
@@ -46,7 +46,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
   
   file.copy(from = paste0(forecast_folder,'/glm3_initial.nml'), to = paste0(evaluation_folder,'/glm3.nml'),overwrite = TRUE)
- 
+  
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
   DoObservedDepths <- c(1,5,9)
   nlayers_init <- length(the_depths_init)
@@ -76,7 +76,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   }
   
   z_obs <- z
-
+  
   #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
   if(include_wq){
     obs_index <- rep(NA,length(TempObservedDepths)+length(DoObservedDepths))
@@ -104,10 +104,21 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
   update_var(length(full_time),'num_days',workingGLM)
   file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
-  fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
-  file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
+  if(machine == 'mac'){
+    fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
+    file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
+    file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
+    system(paste0(evaluation_folder,"/glm"))
+  }
+  if(machine == 'unix'){
+    fl <- list.files(forecast_folder,'*.dll',full.names = TRUE)
+    file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
+    file.copy(from = paste0(forecast_folder,'/glm.exe'), to = paste0(evaluation_folder,'/glm.exe'),overwrite = TRUE)
+    system(paste0(evaluation_folder,"/glm.exe"))
+  }
   
-  system(paste0(evaluation_folder,"/glm"))
+  
+  
   glm_prediction <- get_temp(file = "output.nc", reference = "surface", z_out = the_depths_init)
   
   ###PLOT FORECAST
