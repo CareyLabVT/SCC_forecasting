@@ -104,9 +104,9 @@
 &sediment
   sed_heat_Ksoil = 0.9
   sed_temp_depth = 0.2
-  sed_temp_mean = 5
-  sed_temp_amplitude = 6
-  sed_temp_peak_doy = 160
+  sed_temp_mean = 10
+  sed_temp_amplitude = 5
+  sed_temp_peak_doy = 275
   benthic_mode = 2
   n_zones = 1
   zone_heights = 10

@@ -138,7 +138,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   coef_mix_KH <- 0.3
   coef_mix_hyp <- 0.5
   wind_factor <- 1
-  sw_factor <- 1
+  sw_factor <- 0.7
   lw_factor <- 1
   at_factor <- 1
   rh_factor <- 1
@@ -374,7 +374,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
-        update_var(0.75,'sw_factor',workingGLM)
+        update_var(0.70,'sw_factor',workingGLM)
         update_var(1,'lw_factor',workingGLM)
         update_var(1,'at_factor',workingGLM)
         update_var(met_file_names[met_index],'meteo_fl',workingGLM)
