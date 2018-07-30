@@ -7,9 +7,11 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   evaluation_folder <- file.path(forecast_folder,'evaluation/')
   load(file = paste0(forecast_folder,'/',sim_name,'_EnKF_output.Rdata'))
   
+
   workingGLM <- evaluation_folder
-  
+  if(!dir.exists(evaluation_folder)){ 
   dir.create(evaluation_folder)
+  }
   
   full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
@@ -36,8 +38,8 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   
   ##CREATE INFLOW AND OUTFILE FILES
   #need to fix - this is just a place holder
-  file.copy(from = paste0(forecast_folder,'FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'))
-  file.copy(paste0(forecast_folder,'FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'))
+  file.copy(from = paste0(forecast_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'))
+  file.copy(paste0(forecast_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'))
   create_inflow_outflow_file(full_time,evaluation_folder)
   
   obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
@@ -98,12 +100,14 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   
   ###
   setwd(evaluation_folder)
+  fl <- list.files(forecast_folder,'*nml',full.names = TRUE)
+  file.copy(from = fl, to = paste0(evaluation_folder),overwrite = TRUE)
   update_time(start_value  = full_time[1], stop_value = full_time[length(full_time)],workingGLM)
   update_var('GLM_met_eval.csv','meteo_fl',workingGLM)
   update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
   update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
   update_var(length(full_time),'num_days',workingGLM)
-  file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
+
   if(machine == 'mac'){
     fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
     file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
@@ -111,10 +115,10 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
     system(paste0(evaluation_folder,"/glm"))
   }
   if(machine == 'unix'){
-    fl <- list.files(forecast_folder,'*.dll',full.names = TRUE)
+    fl <- list.files(forecast_folder,'*.so',full.names = TRUE)
     file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
-    file.copy(from = paste0(forecast_folder,'/glm.exe'), to = paste0(evaluation_folder,'/glm.exe'),overwrite = TRUE)
-    system(paste0(evaluation_folder,"/glm.exe"))
+    file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
+    system(paste0(evaluation_folder,"/glm"))
   }
   
   
