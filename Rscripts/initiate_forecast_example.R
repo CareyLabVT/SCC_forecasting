@@ -6,7 +6,7 @@ library(glmtools)
 library(ncdf4)
 library(lubridate)
 
-Folder = getwd()
+Folder = paste(getwd(),"/",sep="")
 
 source(paste0(Folder,'Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'Rscripts/evaluate_forecast.R'))
@@ -24,7 +24,7 @@ out <- run_forecast(
 
 ## EXAMPLE EVALUATING FORECAST AFTER TIME HAS PAST
 evaluate_forecast(
-  forecast_folder = 'forecast_2018_7_6_2018726_12_9',
+  forecast_folder = 'forecast_2018_7_6_2018726_12_9/',
   Folder = Folder,
   sim_name = '2018_7_6',
   machine = 'mac'
@@ -56,7 +56,7 @@ restart_file_name <- run_forecast(first_day= '2018-07-07 00:00:00',
   sim_name = NA, 
   hist_days = 1,
   forecast_days = 8,
-  restart_file = paste0(Folder,'/Forecasts/',unlist(out)[3],'/',unlist(out)[1]),
+  restart_file = paste0(Folder,'Forecasts/',unlist(out)[3],'/',unlist(out)[1]),
   Folder = Folder,
   machine = 'mac'
 )

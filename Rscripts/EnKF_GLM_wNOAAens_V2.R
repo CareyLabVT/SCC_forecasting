@@ -36,19 +36,19 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   nsteps <- length(full_time)
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE
-  workingGLM <- paste0(Folder,'/GLM_working/')  
+  workingGLM <- paste0(Folder,'GLM_working/')  
   print(workingGLM)
   unlink(paste0(workingGLM,'*'),recursive = FALSE)    #Clear out temp GLM working directory
   
   ###LOAD SHARE R FUNCTIONS
-  source(paste0(Folder,'/Rscripts/mcmc_enkf_shared_functions.R'))
-  source(paste0(Folder,'/Rscripts/create_obs_met_input.R'))
-  source(paste0(Folder,'/Rscripts/extract_temp_chain.R'))
-  source(paste0(Folder,'/Rscripts/process_GEFS2GLM_v2.R'))
-  source(paste0(Folder,'/Rscripts/extract_temp_CTD.R'))
-  source(paste0(Folder,'/Rscripts/create_inflow_outflow_file.R'))
-  source(paste0(Folder,'/Rscripts/plot_forecast.R'))
-  source(paste0(Folder,'/Rscripts/archive_forecast.R'))
+  source(paste0(Folder,'Rscripts/mcmc_enkf_shared_functions.R'))
+  source(paste0(Folder,'Rscripts/create_obs_met_input.R'))
+  source(paste0(Folder,'Rscripts/extract_temp_chain.R'))
+  source(paste0(Folder,'Rscripts/process_GEFS2GLM_v2.R'))
+  source(paste0(Folder,'Rscripts/extract_temp_CTD.R'))
+  source(paste0(Folder,'Rscripts/create_inflow_outflow_file.R'))
+  source(paste0(Folder,'Rscripts/plot_forecast.R'))
+  source(paste0(Folder,'Rscripts/archive_forecast.R'))
   
   ###SHARED GLM LIBRARIES
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
@@ -88,7 +88,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #inflow_file_name <- paste0('FCR_inflow_',forecast_base_name,'.csv')
   
   ###MOVE FILES AROUND
-  SimFilesFolder <- paste0(Folder,'/sim_files/')
+  SimFilesFolder <- paste0(Folder,'sim_files/')
   if(machine == 'mac'){
   GLM_folder <-  file.path(Folder,'glm/mac/') 
   }else if(machine == 'unix'){
@@ -394,9 +394,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       #3) Use GLM NML files to run GLM for a day
       if(machine == 'mac'){
-        system(paste0(workingGLM,"/glm"))
+        system(paste0(workingGLM,"glm"))
       }else if(machine == 'unix'){
-        system(paste0(workingGLM,"/glm.exe"))
+        system(paste0(workingGLM,"glm"))
       }
       
       #4) Fill x_star with temperatures from GLM

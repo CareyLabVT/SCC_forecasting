@@ -15,12 +15,12 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   
   ###LOAD SHARE R FUNCTIONS
-  source(paste0(Folder,'/Rscripts/mcmc_enkf_shared_functions.R'))
-  source(paste0(Folder,'/Rscripts/create_obs_met_input.R'))
-  source(paste0(Folder,'/Rscripts/extract_temp_chain.R'))
-  source(paste0(Folder,'/Rscripts/process_GEFS2GLM_v2.R'))
-  source(paste0(Folder,'/Rscripts/extract_temp_CTD.R'))
-  source(paste0(Folder,'/Rscripts/create_inflow_outflow_file.R'))
+  source(paste0(Folder,'Rscripts/mcmc_enkf_shared_functions.R'))
+  source(paste0(Folder,'Rscripts/create_obs_met_input.R'))
+  source(paste0(Folder,'Rscripts/extract_temp_chain.R'))
+  source(paste0(Folder,'Rscripts/process_GEFS2GLM_v2.R'))
+  source(paste0(Folder,'Rscripts/extract_temp_CTD.R'))
+  source(paste0(Folder,'Rscripts/create_inflow_outflow_file.R'))
   
   ###SET FILE NAMES
   catwalk_fname <-  paste0(evaluation_folder,'Catwalk.csv')
@@ -36,8 +36,8 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   
   ##CREATE INFLOW AND OUTFILE FILES
   #need to fix - this is just a place holder
-  file.copy(from = paste0(forecast_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'))
-  file.copy(paste0(forecast_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'))
+  file.copy(from = paste0(forecast_folder,'FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'))
+  file.copy(paste0(forecast_folder,'FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'))
   create_inflow_outflow_file(full_time,evaluation_folder)
   
   obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
@@ -45,7 +45,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   #mg/L (obs) -> mol/m3 * 31.25
   obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
   
-  file.copy(from = paste0(forecast_folder,'/glm3_initial.nml'), to = paste0(evaluation_folder,'/glm3.nml'),overwrite = TRUE)
+  file.copy(from = paste0(forecast_folder,'glm3_initial.nml'), to = paste0(evaluation_folder,'glm3.nml'),overwrite = TRUE)
   
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
   DoObservedDepths <- c(1,5,9)
@@ -189,7 +189,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   WindSpeed = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   Rain = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   
-  o = read.csv(paste0(evaluation_folder,'/GLM_met_eval.csv'))
+  o = read.csv(paste0(evaluation_folder,'GLM_met_eval.csv'))
   
   y <- as.POSIXct(d$time)
   include_times <- which(as.POSIXct(d$time) %in% full_time_hour_obs)
