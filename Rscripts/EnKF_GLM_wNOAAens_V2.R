@@ -204,6 +204,29 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   DIATOMPCH4_init_depth <- c(rep(1,nlayers_init))
   GREENCH5_init_depth <- c(rep(1,nlayers_init))
   
+  #VARS TO MAKE SURE WE HAVE
+  #salt
+  #temp
+  #OXY_oxy
+  #CAR_dic
+  #CAR_ch4
+  #SIL_rsi
+  #NIT_amm
+  #NIT_nit
+  #PHS_frp
+  #PHS_frp_ads?
+  #OGM_doc
+  #OGM_poc
+  #OGM_don
+  #OGM_pon
+  #OGM_dop
+  #OGM_pop
+  #PHY_CYANOPCH1
+  #PHY_CYANONPCH2
+  #PHY_CHLOROPCH3
+  #PHY_DIATOMPCH4
+  
+  
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   wq_init_vals <- c(rep(OGM_doc_init,nlayers_init),do_init,rep(CAR_dic_init,nlayers_init),rep(NIT_amm_init,nlayers_init),rep(NIT_nit_init,nlayers_init),rep(PHS_frp_init,nlayers_init),rep(CAR_ch4_init,nlayers_init),CYANOPCH1_init_depth)
   update_var(wq_init_vals,'wq_init_vals',workingGLM)
