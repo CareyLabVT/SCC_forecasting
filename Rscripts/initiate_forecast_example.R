@@ -6,17 +6,17 @@ library(glmtools)
 library(ncdf4)
 library(lubridate)
 
-Folder = getwd()
+Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 
-source(paste0(Folder,'Rscripts/EnKF_GLM_wNOAAens_V2.R'))
-source(paste0(Folder,'Rscripts/evaluate_forecast.R'))
+source(paste0(Folder,'/Rscripts/EnKF_GLM_wNOAAens_V2.R'))
+source(paste0(Folder,'/Rscripts/evaluate_forecast.R'))
 
 ## EXAMPLE LAUCHING A FORECAST
 out <- run_forecast(
   first_day = '2018-07-06 00:00:00',
   sim_name = NA, 
   hist_days = 1,
-  forecast_days = 15,
+  forecast_days = 1,
   restart_file = NA,
   Folder = Folder,
   machine = 'mac'
