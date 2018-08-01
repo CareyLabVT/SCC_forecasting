@@ -42,8 +42,3 @@ extract_do_chain <- function(fname = catwalk_fname,full_time){
   }
   return(list(obs = obs, depths = depths))
 }
-
-
-
-
-

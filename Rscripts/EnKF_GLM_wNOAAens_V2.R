@@ -1,4 +1,4 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, machine = 'mac'){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder){
   
   ###RUN OPTIONS
   #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -13,6 +13,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   USE_OBS_DEPTHS <- FALSE
   USE_OBS_CONTRAINT <- TRUE
   
+  ###DETECT THE PLATFORM###
+
+  switch(Sys.info() [['sysname']],
+    Linux = { machine <- 'unix' },
+    Darwin = { machine <- 'mac' })
+
   ###CREATE TIME VECTOR
   begin_sim  <- as.POSIXct(first_day)
   total_days <- hist_days + forecast_days
@@ -36,19 +42,19 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   nsteps <- length(full_time)
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE
-  workingGLM <- paste0(Folder,'GLM_working/')  
+  workingGLM <- paste0(Folder,'/','GLM_working')  
   print(workingGLM)
   unlink(paste0(workingGLM,'*'),recursive = FALSE)    #Clear out temp GLM working directory
   
   ###LOAD SHARE R FUNCTIONS
-  source(paste0(Folder,'Rscripts/mcmc_enkf_shared_functions.R'))
-  source(paste0(Folder,'Rscripts/create_obs_met_input.R'))
-  source(paste0(Folder,'Rscripts/extract_temp_chain.R'))
-  source(paste0(Folder,'Rscripts/process_GEFS2GLM_v2.R'))
-  source(paste0(Folder,'Rscripts/extract_temp_CTD.R'))
-  source(paste0(Folder,'Rscripts/create_inflow_outflow_file.R'))
-  source(paste0(Folder,'Rscripts/plot_forecast.R'))
-  source(paste0(Folder,'Rscripts/archive_forecast.R'))
+  source(paste0(Folder,'/','Rscripts/mcmc_enkf_shared_functions.R'))
+  source(paste0(Folder,'/','Rscripts/create_obs_met_input.R'))
+  source(paste0(Folder,'/','Rscripts/extract_temp_chain.R'))
+  source(paste0(Folder,'/','Rscripts/process_GEFS2GLM_v2.R'))
+  source(paste0(Folder,'/','Rscripts/extract_temp_CTD.R'))
+  source(paste0(Folder,'/','Rscripts/create_inflow_outflow_file.R'))
+  source(paste0(Folder,'/','Rscripts/plot_forecast.R'))
+  source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   
   ###SHARED GLM LIBRARIES
   #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
@@ -56,9 +62,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #system(paste('export DYLD_FALLBACK_LIBRARY_PATH=~',pathGLM,'/glm_lib_files:$DYLD_FALLBACK_LIBRARY_PATH',sep=''))
   
   ###SET FILE NAMES
-  forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z',sep='')
-  catwalk_fname <-  paste0(workingGLM,'Catwalk.csv')
-  met_obs_fname <-paste0(workingGLM,'FCRmet.csv')
+  forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
+  catwalk_fname <-  paste0(workingGLM,'/','Catwalk.csv')
+  met_obs_fname <-paste0(workingGLM,'/','FCRmet.csv')
   #ctd_fname <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_data/070218_fcr50.csv' 
   met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
@@ -67,12 +73,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
-  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'FCRmet.csv'))
-  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'Catwalk.csv'))
-  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,forecast_base_name,'.csv'))
+  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
+  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data','/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
   ###CREATE HISTORICAL MET FILE
-  obs_met_outfile <- paste0(workingGLM,'GLM_met.csv')
+  obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
   
   ###CREATE FUTURE MET FILES
@@ -82,18 +88,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   process_GEFS2GLM(in_directory,out_directory,file_name)
   met_file_names <- rep(NA,nMETmembers)
   for(i in 1:nMETmembers){
-    met_file_names[i] <- paste(met_base_file_name,i,'.csv',sep='')
+    met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
   }
   #spillway_outflow_file_name <- paste0('FCR_spillway_outflow_',forecast_base_name,'.csv')
   #inflow_file_name <- paste0('FCR_inflow_',forecast_base_name,'.csv')
   
   ###MOVE FILES AROUND
-  SimFilesFolder <- paste0(Folder,'sim_files/')
-  if(machine == 'mac'){
-  GLM_folder <-  file.path(Folder,'glm/mac/') 
-  }else if(machine == 'unix'){
-    GLM_folder <- file.path(Folder,'glm/unix/') 
-  }
+  SimFilesFolder <- paste0(Folder,'/','sim_files')
+  GLM_folder <- paste0(Folder,'/','glm','/',machine) 
   fl <- c(list.files(SimFilesFolder, full.names = TRUE))
   tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
   fl <- c(list.files(GLM_folder, full.names = TRUE))
@@ -110,9 +112,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   create_inflow_outflow_file(full_time,workingGLM)
   
   if(include_wq){
-    file.copy(from = paste0(workingGLM,'glm3_wAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+    file.copy(from = paste0(workingGLM,'/','glm3_wAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
   }else{
-    file.copy(from = paste0(workingGLM,'glm3_woAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+    file.copy(from = paste0(workingGLM,'/','glm3_woAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
     
   }
   
@@ -344,7 +346,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       }  
     }
     if(!restart_present){
-      write.csv(x[1,,],paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
+      write.csv(x[1,,],paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
     }
   }
   
@@ -353,7 +355,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     print('Using restart file')
     x_previous <- read.csv(restart_file)
   }else{
-    x_previous <- read.csv(paste0(workingGLM,'restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
+    x_previous <- read.csv(paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
   }
   
   if(dim(x[1,,])[1] != dim(x_previous)[1] | dim(x[1,,])[2] != dim(x_previous)[2]){
@@ -371,7 +373,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
   
-  file.copy(from = paste0(workingGLM,'glm3.nml'), to = paste0(workingGLM,'glm3_initial.nml'),overwrite = TRUE)
+  file.copy(from = paste0(workingGLM,'/','glm3.nml'), to = paste0(workingGLM,'/','glm3_initial.nml'),overwrite = TRUE)
   
   ###START EnKF
   met_index <- 1
@@ -412,15 +414,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       if(i == (hist_days+1)){
         restart_file_name <- paste0('restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv')
-        write.csv(x[i-1,,],paste0(workingGLM,restart_file_name),row.names = FALSE)
+        write.csv(x[i-1,,],paste0(workingGLM,'/',restart_file_name),row.names = FALSE)
       }
       
       #3) Use GLM NML files to run GLM for a day
-      if(machine == 'mac'){
-        system(paste0(workingGLM,"glm"))
-      }else if(machine == 'unix'){
-        system(paste0(workingGLM,"glm"))
-      }
+        system(paste0(workingGLM,'/','glm'))
       
       #4) Fill x_star with temperatures from GLM
       GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
@@ -538,7 +536,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   ###SAVE FORECAST
-  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
+  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,file = paste0(workingGLM,'/',sim_name,'_EnKF_output.Rdata'))
 
   ##PLOT FORECAST
   plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
@@ -548,6 +546,3 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
 }
-
-
-

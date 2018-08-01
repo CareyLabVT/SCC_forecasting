@@ -2,7 +2,7 @@
 
 #Set GLM Initial conditions for temperature at each layer from first observations
 update_temps <- function(curr_temps,curr_depths,workingGLM){
-  origNML = read_nml(file.path(workingGLM,'glm3.nml'))
+  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
   index1 = NA; index2 = NA;index3 = NA; index4 = NA
   for (g in 1:length(origNML)) {
     for (q in 1:length(origNML[[g]])) {
@@ -27,13 +27,13 @@ update_temps <- function(curr_temps,curr_depths,workingGLM){
   holder3 = list(holder3)
   origNML[[index1]][index2] = holder2
   origNML[[index3]][index4] = holder3
-  write_nml(origNML, file.path(workingGLM,'glm3.nml'))
+  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
   return(list(depths,init_temps))
 }
 
 
 update_var <- function(var_value,var_name,workingGLM){
-  origNML = read_nml(file.path(workingGLM,'glm3.nml'))
+  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
   index1 = NA; index2 = NA
   for (g in 1:length(origNML)) {
     for (q in 1:length(origNML[[g]])) {
@@ -46,11 +46,11 @@ update_var <- function(var_value,var_name,workingGLM){
   holder2[1:length(var_value)] = var_value
   holder2 = list(holder2[1:length(var_value)])
   origNML[[index1]][index2] = holder2
-  write_nml(origNML, file.path(workingGLM,'glm3.nml'))
+  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
 }
 
 update_time <- function(start_value,stop_value,workingGLM){
-  origNML = read_nml(file.path(workingGLM,'glm3.nml'))
+  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
   index1 = NA; index2 = NA; index3 = NA; index4 = NA
   for (g in 1:length(origNML)) {
     for (q in 1:length(origNML[[g]])) {
@@ -64,7 +64,7 @@ update_time <- function(start_value,stop_value,workingGLM){
   }
   origNML[[index1]][index2] = start_value
   origNML[[index3]][index4] = stop_value
-  write_nml(origNML, file.path(workingGLM,'glm3.nml'))
+  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
 }
 
 get_glm_nc_var <- function(ncFile,z_out,var = 'temp'){
@@ -103,7 +103,7 @@ update_phyto <- function(p_initial,nml_name = 'aed2_phyto_pars.nml'){
   if(length(p_initial)<6){
     print('number of phyto group does not equal 6')
   }   
-  nml_file <- file.path(workingGLM,nml_name)
+  nml_file <- paste0(workingGLM,'/',nml_name)
   c <- file(nml_file, "r")
   fileLines <- readLines(c)
   close(c)
