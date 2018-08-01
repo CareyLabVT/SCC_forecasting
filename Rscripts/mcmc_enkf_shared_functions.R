@@ -130,3 +130,34 @@ update_phyto <- function(p_initial,nml_name = 'aed2_phyto_pars.nml'){
   cat(noquote(paste(paste(l[[7]],collapse = ','),'\n')))
   sink()
 }
+
+get_glm_nc_var_all_wq <- function(ncFile,z_out,vars){
+  glm_nc <- nc_open(ncFile)
+  tallest_layer <- ncvar_get(glm_nc, "NS")
+  elev <- ncvar_get(glm_nc, "z")
+  elev_surf = get_surface_height(ncFile)
+  max_i <- tallest_layer[length(tallest_layer)]
+  elev <- elev[1:max_i, length(tallest_layer)]
+  num_step <- length(tallest_layer)
+  num_dep <- length(z_out)
+  temp_out <- rep(NA,num_dep)
+  tme = num_step
+  elevs_out <- elev_surf[tme, 2] - z_out
+  elevs = elev
+  num_z <- max_i
+  layer_mids <- c(elevs[1]/2, elevs[1:num_z-1] + diff(elevs)/2)
+  elevs_re <- c(0, layer_mids, tail(elevs, 1))
+  
+  output <- array(NA,dim=c(num_dep,length(vars)))
+  for(v in 1:length(vars)){
+    temp <- ncvar_get(glm_nc, vars[v])
+    temp <- temp[1:max_i, length(tallest_layer)]
+    temps = temp
+    temps_re <- c(temps[1], temps, tail(temps,1))
+    
+    output[,v] <- approx(x = elevs_re, y = temps_re, xout = elevs_out)$y
+ 
+  }
+  nc_close(glm_nc)
+  return(list(output = output,surface_height = elev_surf[2,length(tallest_layer)]))
+}
