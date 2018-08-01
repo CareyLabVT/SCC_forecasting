@@ -70,4 +70,3 @@ create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
   write.csv(GLM_climate,file = outfile,row.names = FALSE,quote = FALSE)
   }
 }
-

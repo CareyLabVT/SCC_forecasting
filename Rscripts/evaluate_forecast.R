@@ -1,10 +1,10 @@
-evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', machine = 'mac'){
+evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   ###LOAD FORECAST FOR ANALYSIS
   #sim_name = '2018_7_6'
   #forecast_folder = 'forecast_2018_7_6_2018726_12_9'
   #Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
-  forecast_folder = file.path(Folder,'Forecasts',forecast_folder)
-  evaluation_folder <- file.path(forecast_folder,'evaluation/')
+  forecast_folder = paste0(Folder,'/','Forecasts','/',forecast_folder)
+  evaluation_folder <- paste0(forecast_folder,'/','evaluation')
   load(file = paste0(forecast_folder,'/',sim_name,'_EnKF_output.Rdata'))
   
 
@@ -17,29 +17,29 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   
   ###LOAD SHARE R FUNCTIONS
-  source(paste0(Folder,'Rscripts/mcmc_enkf_shared_functions.R'))
-  source(paste0(Folder,'Rscripts/create_obs_met_input.R'))
-  source(paste0(Folder,'Rscripts/extract_temp_chain.R'))
-  source(paste0(Folder,'Rscripts/process_GEFS2GLM_v2.R'))
-  source(paste0(Folder,'Rscripts/extract_temp_CTD.R'))
-  source(paste0(Folder,'Rscripts/create_inflow_outflow_file.R'))
+  source(paste0(Folder,'/','Rscripts/mcmc_enkf_shared_functions.R'))
+  source(paste0(Folder,'/','Rscripts/create_obs_met_input.R'))
+  source(paste0(Folder,'/','Rscripts/extract_temp_chain.R'))
+  source(paste0(Folder,'/','Rscripts/process_GEFS2GLM_v2.R'))
+  source(paste0(Folder,'/','Rscripts/extract_temp_CTD.R'))
+  source(paste0(Folder,'/','Rscripts/create_inflow_outflow_file.R'))
   
   ###SET FILE NAMES
-  catwalk_fname <-  paste0(evaluation_folder,'Catwalk.csv')
-  met_obs_fname <-paste0(evaluation_folder,'FCRmet.csv')
+  catwalk_fname <-  paste0(evaluation_folder,'/','Catwalk.csv')
+  met_obs_fname <-paste0(evaluation_folder,'/','FCRmet.csv')
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
-  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(evaluation_folder,'FCRmet.csv'))
-  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(evaluation_folder,'Catwalk.csv'))
+  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(evaluation_folder,'/','FCRmet.csv'))
+  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(evaluation_folder,'/','Catwalk.csv'))
   
   ###CREATE HISTORICAL MET FILE
-  obs_met_outfile <- paste0(evaluation_folder,'GLM_met_eval.csv')
+  obs_met_outfile <- paste0(evaluation_folder,'/','GLM_met_eval.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
   
   ##CREATE INFLOW AND OUTFILE FILES
   #need to fix - this is just a place holder
-  file.copy(from = paste0(forecast_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/FCR_weir_inflow_2013_2017_20180716.csv'))
-  file.copy(paste0(forecast_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/FCR_spillway_outflow_2013_2017_20180716.csv'))
+  file.copy(from = paste0(forecast_folder,'/','FCR_weir_inflow_2013_2017_20180716.csv'),to = paste0(evaluation_folder,'/','FCR_weir_inflow_2013_2017_20180716.csv'))
+  file.copy(paste0(forecast_folder,'/','FCR_spillway_outflow_2013_2017_20180716.csv'),paste0(evaluation_folder,'/','FCR_spillway_outflow_2013_2017_20180716.csv'))
   create_inflow_outflow_file(full_time,evaluation_folder)
   
   obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
@@ -47,7 +47,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   #mg/L (obs) -> mol/m3 * 31.25
   obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
   
-  file.copy(from = paste0(forecast_folder,'glm3_initial.nml'), to = paste0(evaluation_folder,'glm3.nml'),overwrite = TRUE)
+  file.copy(from = paste0(forecast_folder,'/','glm3_initial.nml'), to = paste0(evaluation_folder,'/','glm3.nml'),overwrite = TRUE)
   
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
   DoObservedDepths <- c(1,5,9)
@@ -110,23 +110,19 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
 
   if(machine == 'mac'){
     fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
-    file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
-    file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
-    system(paste0(evaluation_folder,"/glm"))
   }
   if(machine == 'unix'){
     fl <- list.files(forecast_folder,'*.so',full.names = TRUE)
-    file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
-    file.copy(from = paste0(forecast_folder,'/glm'), to = paste0(evaluation_folder,'/glm'),overwrite = TRUE)
-    system(paste0(evaluation_folder,"/glm"))
   }
-  
+  file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
+  file.copy(from = paste0(forecast_folder,'/','glm'), to = paste0(evaluation_folder,'/','glm'),overwrite = TRUE)
+  system(paste0(evaluation_folder,'/',"glm"))
   
   
   glm_prediction <- get_temp(file = "output.nc", reference = "surface", z_out = the_depths_init)
   
   ###PLOT FORECAST
-  pdf(paste0(evaluation_folder,sim_name,'_EnKF_output.pdf'))
+  pdf(paste0(evaluation_folder,'/',sim_name,'_EnKF_output.pdf'))
   par(mfrow=c(4,3))
   
   z = z_obs
@@ -185,7 +181,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   
   nMETmembers = 21
   ###PLOT NOAA MET TO VIEWING 
-  d = read.csv(file.path(forecast_folder,met_file_names[1]))
+  d = read.csv(paste0(forecast_folder,'/',met_file_names[1]))
   air_temp = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   ShortWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   LongWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
@@ -193,13 +189,13 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   WindSpeed = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   Rain = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   
-  o = read.csv(paste0(evaluation_folder,'GLM_met_eval.csv'))
+  o = read.csv(paste0(evaluation_folder,'/','GLM_met_eval.csv'))
   
   y <- as.POSIXct(d$time)
   include_times <- which(as.POSIXct(d$time) %in% full_time_hour_obs)
   
   for(ens in 1:nMETmembers){
-    d = read.csv(file.path(forecast_folder,met_file_names[ens]))
+    d = read.csv(paste0(forecast_folder,'/',met_file_names[ens]))
     air_temp[ens,] = d$AirTemp
     ShortWave[ens,] = d$ShortWave
     LongWave[ens,] = d$LongWave
@@ -267,7 +263,5 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6', mach
   points(as.POSIXct(o$time),o$Rain,col='red',type='l')
   
   dev.off()
-  
-  
-  
+
 }

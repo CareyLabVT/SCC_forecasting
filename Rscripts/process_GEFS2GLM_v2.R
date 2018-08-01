@@ -8,13 +8,13 @@ library(lubridate)
 process_GEFS2GLM <- function(in_directory,out_directory,file_name){
   #directory <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_structure/data/met/forecast/met_forecast_processing/'
   #file_name <- '20180625gep_all_00z'
-  f <- paste0(in_directory,file_name,'.csv')
+  f <- paste0(in_directory,'/',file_name,'.csv')
   if(!file.exists(f)){
     print('Missing forecast file!')
     print(f)
     stop()
   }else{
-    d <- read.csv(paste0(in_directory,file_name,'.csv')) 
+    d <- read.csv(paste0(in_directory,'/',file_name,'.csv')) 
     d$forecast.date <- as.POSIXct(d$forecast.date)
     
     
@@ -90,7 +90,7 @@ process_GEFS2GLM <- function(in_directory,out_directory,file_name){
       GLM_climate = data.frame(full_time,ShortWave[,ens],LongWave[,ens],AirTemp[,ens],RelHum[,ens],WindSpeed[,ens],Rain[,ens],Snow[,ens])
       n= noquote(c('time','ShortWave','LongWave','AirTemp','RelHum','WindSpeed','Rain','Snow'))
       colnames(GLM_climate) = noquote(c('time','ShortWave','LongWave','AirTemp','RelHum','WindSpeed','Rain','Snow'))
-      write.csv(GLM_climate,file = paste(out_directory,'met_hourly_',file_name,'_ens',ens,'.csv',sep=''),row.names = FALSE,quote = FALSE)
+      write.csv(GLM_climate,file = paste0(out_directory,'/','met_hourly_',file_name,'_ens',ens,'.csv'),row.names = FALSE,quote = FALSE)
     }
     
     #### KLUDGE

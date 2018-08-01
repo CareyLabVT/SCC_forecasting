@@ -1,9 +1,9 @@
 plot_forecast <- function(workingGLM,sim_name){
   ###LOAD FORECAST FOR ANALYSIS
-  load(file = paste0(workingGLM,sim_name,'_EnKF_output.Rdata'))
+  load(file = paste0(workingGLM,'/',sim_name,'_EnKF_output.Rdata'))
 
   ###PLOT FORECAST
-  pdf(paste0(workingGLM,sim_name,'_forecast.pdf'))
+  pdf(paste0(workingGLM,'/',sim_name,'_forecast.pdf'))
   par(mfrow=c(4,3))
   
   z = z_obs
@@ -63,7 +63,7 @@ plot_forecast <- function(workingGLM,sim_name){
   }
   
   ###PLOT NOAA MET TO VIEWING 
-  d = read.csv(file.path(workingGLM,met_file_names[1]))
+  d = read.csv(paste0(workingGLM,'/',met_file_names[1]))
   air_temp = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   ShortWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
   LongWave = array(NA,dim=c(nMETmembers,length(d$AirTemp)))
@@ -74,7 +74,7 @@ plot_forecast <- function(workingGLM,sim_name){
   y <- as.POSIXct(d$time)
   
   for(ens in 1:nMETmembers){
-    d = read.csv(paste0(workingGLM,met_file_names[ens]))
+    d = read.csv(paste0(workingGLM,'/',met_file_names[ens]))
     air_temp[ens,] = d$AirTemp
     ShortWave[ens,] = d$ShortWave
     LongWave[ens,] = d$LongWave

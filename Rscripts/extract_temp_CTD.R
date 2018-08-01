@@ -8,4 +8,3 @@ extract_temp_CTD <- function(fname){
   }
   return(list(obs = obs, depths = depths))
 }
-
