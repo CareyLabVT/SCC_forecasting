@@ -454,6 +454,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         update_var(wq_init_vals,'wq_init_vals',workingGLM)
       }
       
+     
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
         update_var(0.70,'sw_factor',workingGLM)
@@ -468,6 +469,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
         
       }
+      #update_var(rnorm(1,1.0,0.1),'sw_factor',workingGLM)
+      #update_var(rnorm(1,1.0,0.1),'wind_factor',workingGLM)
+      #update_var(rnorm(1,1,0.1),'at_factor',workingGLM)
+      #update_var(rnorm(1,0.0013,0.0005),'at_factor',workingGLM)
       
       if(i == (hist_days+1)){
         restart_file_name <- paste0('restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv')
