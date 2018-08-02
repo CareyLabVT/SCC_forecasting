@@ -119,17 +119,42 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   ###SET UP RUN
-  num_wq <- 1
+  wq_names <- c('OXY_oxy',
+                'CAR_pH','CAR_dic','CAR_ch4', 
+                'SIL_rsi',
+                'NIT_amm', 'NIT_nit',
+                'PHS_frp',
+                'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',  #'OGM_docr', 'OGM_donr', 'OGM_dopr','OGM_cpom', 
+                'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
+  num_wq_vars <- length(wq_names) 
+  glm_output_vars <- c('temp',wq_names)
   
-  lake_depth_init <- 10.0
+  
+  #Initial States
+  lake_depth_init <- 10.0  #not a modeled state
   the_sals_init <- 0.5
-  OGM_doc_init <- 47.4
   OXY_oxy_init <- 300.62
+  CAR_pH_init <- 6.5
   CAR_dic_init <- 59.1
+  CAR_ch4_init <- 0.58
+  SIL_rsi_init <- 300
   NIT_amm_init <- 0.69
   NIT_nit_init <- 0.05
   PHS_frp_init <- 0.07
-  CAR_ch4_init <- 0.58
+  OGM_doc_init <- 47.4
+  OGM_poc_init <- 78.5
+  OGM_don_init <- 1.3
+  OGM_pon_init <- 8.3
+  OGM_dop_init <- 1.5
+  OGM_pop_init <- 8.3
+  OGM_docr_init <- 350.00
+  OGM_donr_init <- 13.0
+  OGM_dopr_init <- 3.0
+  OGM_cpom_init <- 100.00
+  PHY_CYANOPCH1_init <- 2.0
+  PHY_CYANONPCH2_init <-2.0
+  PHY_CHLOROPCH3_init <-2.0
+  PHY_DIATOMPCH4_init <- 2.0
   
   #Parameters
   Kw <- 0.86
@@ -184,8 +209,17 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   temp_start <- 1
   temp_end <- length(the_depths_init)
-  do_start <- temp_end+1
-  do_end <- temp_end + (length(the_depths_init))
+  wq_start <- rep(NA,num_wq_vars)
+  wq_end <- rep(NA,num_wq_vars)
+  for(wq in 1:num_wq_vars){
+    if(wq == 1){
+      wq_start[wq] <- temp_end+1
+      wq_end[wq] <- temp_end + (length(the_depths_init))
+    }else{
+      wq_start[wq] <- wq_end[wq-1]+1
+      wq_end[wq] <- wq_end[wq-1] + (length(the_depths_init))
+    }
+  }
   
   #SET UP GLM VARIANCE PARAMETERS
   #RMVNORM USES VARIANCE RATHER THAN STANDARD DEVIATATION
@@ -198,40 +232,61 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   temps_variance_init <- 0.001^2
   temps_variance_init <- 1^2
+
+  #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
+  OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)
+  CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init)
+  CAR_dic_init_depth <- rep(CAR_dic_init,nlayers_init)
+  CAR_ch4_init_depth <- rep(CAR_ch4_init,nlayers_init)
+  SIL_rsi_init_depth <- rep(SIL_rsi_init,nlayers_init)
+  NIT_amm_init_depth <- rep(NIT_amm_init,nlayers_init)
+  NIT_nit_init_depth <- rep(NIT_nit_init,nlayers_init)
+  PHS_frp_init_depth <- rep(PHS_frp_init,nlayers_init)
+  OGM_doc_init_depth <- rep(OGM_doc_init,nlayers_init)
+  OGM_poc_init_depth <- rep(OGM_poc_init,nlayers_init)
+  OGM_don_init_depth <- rep(OGM_don_init,nlayers_init)
+  OGM_pon_init_depth <- rep(OGM_pon_init,nlayers_init)
+  OGM_dop_init_depth <- rep(OGM_dop_init,nlayers_init)
+  OGM_pop_init_depth <- rep(OGM_pop_init,nlayers_init)
+  #OGM_docr_init_depth <- rep(OGM_docr_init,nlayers_init)
+  #OGM_donr_init_depth <- rep(OGM_donr_init,nlayers_init)
+  #OGM_dopr_init_depth <- rep(OGM_dopr_init,nlayers_init)
+  #OGM_cpom_init_depth <- rep(OGM_cpom_init,nlayers_init)
+  PHY_CYANOPCH1_init_depth <- rep(PHY_CYANOPCH1_init,nlayers_init)
+  PHY_CYANONPCH2_init_depth <- rep(PHY_CYANONPCH2_init,nlayers_init)
+  PHY_CHLOROPCH3_init_depth <- rep(PHY_CHLOROPCH3_init,nlayers_init)
+  PHY_DIATOMPCH4_init_depth <- rep(PHY_DIATOMPCH4_init,nlayers_init)
   
-  #TEMPORARY TO ADD PHYTOS
-  CYANOPCH1_init_depth <- c(rep(1,nlayers_init))
-  CYANONPCH2_init_depth <- c(rep(1,nlayers_init)) 
-  CHLOROPCH3_init_depth <- c(rep(1,nlayers_init)) 
-  DIATOMPCH4_init_depth <- c(rep(1,nlayers_init))
-  GREENCH5_init_depth <- c(rep(1,nlayers_init))
   
-  #VARS TO MAKE SURE WE HAVE
-  #salt
-  #temp
-  #OXY_oxy
-  #CAR_dic
-  #CAR_ch4
-  #SIL_rsi
-  #NIT_amm
-  #NIT_nit
-  #PHS_frp
-  #PHS_frp_ads?
-  #OGM_doc
-  #OGM_poc
-  #OGM_don
-  #OGM_pon
-  #OGM_dop
-  #OGM_pop
-  #PHY_CYANOPCH1
-  #PHY_CYANONPCH2
-  #PHY_CHLOROPCH3
-  #PHY_DIATOMPCH4
+  #PHY_CYANOPCH1_init_depth[2:nlayers_init] <- 0
+  #PHY_CYANOPCH1_init_depth[1] <- 100 
   
+  wq_init_vals <- c(OXY_oxy_init_depth,
+                    CAR_pH_init_depth,
+                    CAR_dic_init_depth,
+                    CAR_ch4_init_depth,
+                    SIL_rsi_init_depth,
+                    NIT_amm_init_depth,
+                    NIT_nit_init_depth,
+                    PHS_frp_init_depth,
+                    OGM_doc_init_depth,
+                    OGM_poc_init_depth,
+                    OGM_don_init_depth,
+                    OGM_pon_init_depth,
+                    OGM_dop_init_depth,
+                    OGM_pop_init_depth,
+                    #OGM_docr_init_depth,
+                    #OGM_donr_init_depth,
+                    #OGM_dopr_init_depth,
+                    #OGM_cpom_init_depth,
+                    PHY_CYANOPCH1_init_depth,
+                    PHY_CYANONPCH2_init_depth,
+                    PHY_CHLOROPCH3_init_depth,
+                    PHY_DIATOMPCH4_init_depth)
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
-  wq_init_vals <- c(rep(OGM_doc_init,nlayers_init),do_init,rep(CAR_dic_init,nlayers_init),rep(NIT_amm_init,nlayers_init),rep(NIT_nit_init,nlayers_init),rep(PHS_frp_init,nlayers_init),rep(CAR_ch4_init,nlayers_init),CYANOPCH1_init_depth)
   update_var(wq_init_vals,'wq_init_vals',workingGLM)
+  update_var(num_wq_vars,'num_wq_vars',workingGLM)
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
   update_var(lake_depth_init,'lake_depth',workingGLM)
   update_var(nlayers_init,'num_depths',workingGLM)
@@ -370,6 +425,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #Matrix to store ensemble specific deviations and innovations
   dit <- array(NA,dim=c(nmembers,nstates))
   #dit_star = array(NA,dim=c(nmembers,nstates)) #Adaptive noise estimation
+  
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
   
@@ -391,9 +447,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
+      update_var(surface_height[i-1,m],'lake_depth',workingGLM)
       
       if(include_wq){
-        wq_init_vals <- c(rep(OGM_doc_init,nlayers_init),x[i-1,m,do_start:do_end],rep(CAR_dic_init,nlayers_init),rep(NIT_amm_init,nlayers_init),rep(NIT_nit_init,nlayers_init),rep(PHS_frp_init,nlayers_init),rep(CAR_ch4_init,nlayers_init),CYANOPCH1_init_depth)
+        wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
         update_var(wq_init_vals,'wq_init_vals',workingGLM)
       }
       
@@ -418,7 +475,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       }
       
       #3) Use GLM NML files to run GLM for a day
-        system(paste0(workingGLM,'/','glm'))
+      system(paste0(workingGLM,'/','glm'))
       
       #4) Fill x_star with temperatures from GLM
       GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
@@ -426,6 +483,17 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       if(include_wq){
         GLMdo <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'OXY_oxy')
         x_star[m,do_start:do_end] <- GLMdo
+      }
+      
+      if(include_wq){
+        GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+        x_star[m,] <- c(GLM_temp_wq_out$output)
+        surface_height[i,m] <- GLM_temp_wq_out$surface_height 
+      }else{
+        GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
+        #get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
+        x_star[m,temp_start:temp_end] <- GLM_temp_wq_out$output
+        surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       }
       
       #INCREMENT THE MET_INDEX TO MOVE TO THE NEXT NOAA ENSEMBLE
