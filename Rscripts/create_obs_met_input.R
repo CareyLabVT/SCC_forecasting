@@ -23,7 +23,7 @@ create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
   Rain = rep(NA,length(full_time_hour_obs)-1)
   Snow = rep(NA,length(full_time_hour_obs)-1)
   
-  d_time_tmp <- as.POSIXct(d$TIMESTAMP)
+  d_time_tmp <- as.POSIXct(d$TIMESTAMP, format="%Y-%m-%d %H:%M")
   full_time_tmp <- as.POSIXct(full_time_hour_obs)
   
   if(length(which(d_time_tmp==full_time_tmp[1]))>0){
