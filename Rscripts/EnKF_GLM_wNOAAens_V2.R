@@ -19,6 +19,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     Linux = { machine <- 'unix' },
     Darwin = { machine <- 'mac' })
 
+  ###INSTALL PREREQUISITES##
+
+  #INSTALL libnetcdf
+  if(machine == 'unix') {
+  	system("if [ $(dpkg-query -W -f='${Status}' libnetcdf-dev 2>/dev/null | grep -c 'ok installed') -eq 0 ]; then sudo apt update && sudo apt install libnetcdf-dev; fi;")
+  }
+
   ###CREATE TIME VECTOR
   begin_sim  <- as.POSIXct(first_day)
   total_days <- hist_days + forecast_days
