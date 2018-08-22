@@ -1,3 +1,6 @@
 .DS_Store
 GLM_working/*
 Forecasts/*
+*.Rproj
+.Rproj.user
+.Rhistory

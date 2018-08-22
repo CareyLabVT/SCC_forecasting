@@ -1,5 +1,6 @@
 if (!"mvtnorm" %in% installed.packages()) install.packages("mvtnorm")
 if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4")
+if (!"lubridate" %in% installed.packages()) install.packages("lubridate")
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
 library(mvtnorm)
 library(glmtools)
