@@ -421,7 +421,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #Set initial conditions
   x[1,,] <- as.matrix(x_previous)
   
-  
+  parameter_matrix <- array(NA,dim=c(nmembers,3))
+  parameter_matrix[,1] <- rnorm(nmembers,1.0,0.1)
+  parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
+  parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   #Matrix to store ensemble specific deviations and innovations
   dit <- array(NA,dim=c(nmembers,nstates))
   #dit_star = array(NA,dim=c(nmembers,nstates)) #Adaptive noise estimation
@@ -448,6 +451,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
+      #update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
+      #update_var(parameter_matrix[m,2],'wind_factor',workingGLM)
+      #update_var(parameter_matrix[m,3],'cd',workingGLM)
       
       if(include_wq){
         wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
@@ -457,9 +463,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
      
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
       if(i > (hist_days+1)){
-        update_var(0.70,'sw_factor',workingGLM)
-        update_var(1,'lw_factor',workingGLM)
-        update_var(1,'at_factor',workingGLM)
+        #update_var(0.70,'sw_factor',workingGLM)
+        #update_var(1,'lw_factor',workingGLM)
+        #update_var(1,'at_factor',workingGLM)
         update_var(met_file_names[met_index],'meteo_fl',workingGLM)
         update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
         update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
@@ -469,10 +475,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
         
       }
-      #update_var(rnorm(1,1.0,0.1),'sw_factor',workingGLM)
-      #update_var(rnorm(1,1.0,0.1),'wind_factor',workingGLM)
-      #update_var(rnorm(1,1,0.1),'at_factor',workingGLM)
-      #update_var(rnorm(1,0.0013,0.0005),'at_factor',workingGLM)
       
       if(i == (hist_days+1)){
         restart_file_name <- paste0('restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv')
@@ -481,14 +483,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       #3) Use GLM NML files to run GLM for a day
       system(paste0(workingGLM,'/','glm'))
-      
-      #4) Fill x_star with temperatures from GLM
-      GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
-      x_star[m,temp_start:temp_end] = GLMtemps
-      if(include_wq){
-        GLMdo <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'OXY_oxy')
-        x_star[m,do_start:do_end] <- GLMdo
-      }
       
       if(include_wq){
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
