@@ -14,9 +14,9 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 
 ## EXAMPLE LAUCHING A FORECAST
 out <- run_forecast(
-  first_day = '2018-07-06 00:00:00',
+  first_day = '2018-07-15 00:00:00',
   sim_name = NA, 
-  hist_days = 5,
+  hist_days = 1,
   forecast_days = 15,
   restart_file = NA,
   Folder = Folder

@@ -7,7 +7,10 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   evaluation_folder <- paste0(forecast_folder,'/','evaluation')
   load(file = paste0(forecast_folder,'/',sim_name,'_EnKF_output.Rdata'))
   
-
+  switch(Sys.info() [['sysname']],
+         Linux = { machine <- 'unix' },
+         Darwin = { machine <- 'mac' })
+  
   workingGLM <- evaluation_folder
   if(!dir.exists(evaluation_folder)){ 
   dir.create(evaluation_folder)
@@ -107,6 +110,17 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
   update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
   update_var(length(full_time),'num_days',workingGLM)
+  
+  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+  #KLUDGE TO GET WORKING
+  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+  init_temps1 <- obs_temp$obs[2,]
+
+  temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
+  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+  the_temps_init <- temp_inter(the_depths_init)
+
+  
 
   if(machine == 'mac'){
     fl <- list.files(forecast_folder,'*.dylib',full.names = TRUE)
@@ -116,6 +130,8 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   }
   file.copy(from = fl, to = evaluation_folder,overwrite = TRUE)
   file.copy(from = paste0(forecast_folder,'/','glm'), to = paste0(evaluation_folder,'/','glm'),overwrite = TRUE)
+  
+  tmp <- update_temps(curr_temps = the_temps_init,the_depths_init,workingGLM)
   system(paste0(evaluation_folder,'/',"glm"))
   
   
