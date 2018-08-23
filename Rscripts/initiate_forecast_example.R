@@ -19,7 +19,8 @@ out <- run_forecast(
   hist_days = 1,
   forecast_days = 15,
   restart_file = NA,
-  Folder = Folder
+  Folder = Folder,
+  forecast_location = NA
   )
 
 ## EXAMPLE EVALUATING FORECAST AFTER TIME HAS PAST
@@ -45,7 +46,8 @@ out <- run_forecast(
   hist_days = 1,
   forecast_days = 1,
   restart_file = NA,
-  Folder = Folder
+  Folder = Folder,
+  forecast_location = NA
 )
 
 #SUBSEQUENT DAYS LAUNCH
@@ -54,5 +56,6 @@ restart_file_name <- run_forecast(first_day= '2018-07-07 00:00:00',
   hist_days = 1,
   forecast_days = 8,
   restart_file = paste0(Folder,'/','Forecasts','/',unlist(out)[3],'/',unlist(out)[1]),
-  Folder = Folder
+  Folder = Folder,
+  forecast_location = NA
 )

@@ -1,4 +1,4 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, forecast_location = NA){
   
   ###RUN OPTIONS
   #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
