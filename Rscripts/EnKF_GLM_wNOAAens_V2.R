@@ -51,7 +51,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   ###CREATE DIRECTORY PATHS AND STRUCTURE
   workingGLM <- paste0(Folder,'/','GLM_working')  
   print(workingGLM)
-  unlink(paste0(workingGLM,'*'),recursive = FALSE)    #Clear out temp GLM working directory
+  unlink(paste0(workingGLM,'/*'),recursive = FALSE)    #Clear out temp GLM working directory
   
   ###LOAD SHARE R FUNCTIONS
   source(paste0(Folder,'/','Rscripts/mcmc_enkf_shared_functions.R'))
@@ -239,6 +239,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   temps_variance_init <- 0.001^2
   temps_variance_init <- 1^2
+  
+
 
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)
@@ -364,19 +366,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
   #Process error 
-  cross_var <-0.0
-  Qt_init <- diag(temps_variance_init, nstates)
-  Qt <- diag(temps_variance, nstates)
-  for(s in 1:nstates){
-    if(s == 1){
-      Qt[s,s+1] <- cross_var
-    }else if(s == nstates){
-      Qt[s,s-1] <- cross_var
-    }else{
-      Qt[s,s-1] <- cross_var
-      Qt[s,s+1] <- cross_var
-    }
-  }
+  
+  thermo_depth_error <- 0.1
+  temp_error <- 0.1
+  #cross_var <-0.0
+  #Qt_init <- diag(temps_variance_init, nstates)
+  #Qt <- diag(temps_variance, nstates)
+  #for(s in 1:nstates){
+  #  if(s == 1){
+  #    Qt[s,s+1] <- cross_var
+  #  }else if(s == nstates){
+  #    Qt[s,s-1] <- cross_var
+  #  }else{
+  #    Qt[s,s-1] <- cross_var
+  #    Qt[s,s+1] <- cross_var
+  #  }
+  #}
   #Measurement error 
   psi <- rep(0.0001,length(obs_index))
   
@@ -399,8 +404,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         }
       }
     }else{
-      
-      x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt_init))
+      #x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt_init))
+      for(m in 1:nmembers){
+        corr_temps <- the_temps_init + rnorm(1,0,temp_error)
+        corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+        corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+        x[1,m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
+      }
       if(NO_UNCERT){
         for(m in 1:nmembers){
           x[1,m,] <- the_temps_init
@@ -429,7 +439,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   x[1,,] <- as.matrix(x_previous)
   
   parameter_matrix <- array(NA,dim=c(nmembers,3))
-  parameter_matrix[,1] <- rnorm(nmembers,1.0,0.1)
+  parameter_matrix[,1] <- rnorm(nmembers,1.0,0.05)
   parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
   parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   #Matrix to store ensemble specific deviations and innovations
@@ -453,12 +463,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     
     #Create array to hold GLM predictions for each ensemble
     x_star <- array(NA, dim = c(nmembers,nstates))
+    x_corr <- array(NA, dim = c(nmembers,nstates))
     for(m in 1:nmembers){
       
       #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
-      #update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
+      update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
       #update_var(parameter_matrix[m,2],'wind_factor',workingGLM)
       #update_var(parameter_matrix[m,3],'cd',workingGLM)
       
@@ -507,13 +518,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       if(met_index > nMETmembers){
         met_index <- 1
       }
+      
+      corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error)
+      corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+
+      corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+      x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
+      plot(x_star[m,temp_start:temp_end],rev(the_depths_init),xlim=c(0,31))
+      points(corrupt_profile(the_depths_init),rev(the_depths_init),col='red')
+      
     }
     
     #Corruption [nmembers x nstates] 
-    NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
+    #NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
     
     #Matrix Corrupted state estimate [nmembers x nstates]
-    x_corr <- x_star + NQt
+    #x_corr <- x_star + NQt
     
     #Obs for time step
     z_index <- which(!is.na(z[i,]))
@@ -616,7 +636,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
 
   ##ARCHIVE FORECAST
-  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time)
+  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location)
   
   return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
 }
