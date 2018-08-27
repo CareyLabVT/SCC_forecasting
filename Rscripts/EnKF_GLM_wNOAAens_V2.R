@@ -184,6 +184,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #PROCESS TEMPERATURE OBSERVATIONS
   #if(!use_CTD){
     obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+    for(i in 1:length(obs_temp$obs[,1])){
+      for(j in 1:length(obs_temp$obs[1,])){
+        if(obs_temp$obs[i,j] == 0){
+          obs_temp$obs[i,j] = NA
+        } 
+      }
+    }
+    
   #}else{
   #  obs_temp <- extract_temp_CTD(fname = ctd_fname)
   #}
@@ -197,23 +205,37 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   DoObservedDepths <- c(1,5,9)
   
-  temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
+  the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+  nlayers_init <- length(the_depths_init)
   
-  #SET UP INITIAL CONDITIONS
-  if(USE_OBS_DEPTHS){
-    nlayers_init <- length(TempObservedDepths)
-    the_depths_init <- TempObservedDepths
-    the_temps_init <- init_temps1
-  }else{
-    the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
-    nlayers_init <- length(the_depths_init)
-    the_temps_init <- temp_inter(the_depths_init)
-    do_init <- rep(NA,length(the_depths_init))
-    do_init[1:13] <- obs_do$obs[1,1]
-    do_init[14:23] <- obs_do$obs[1,2]
-    do_init[24:29] <- obs_do$obs[1,3]
+  #NEED AN ERROR CHECK FOR WHETHER THERE ARE OBSERVED DATA
+  if(is.na(restart_file)){
+  if((length(which(init_temps1 != 0.0)) == 0) | length(which(is.na(init_temps1))) >0){
+    print('Pick another start day or provide an initial condition file: observations not avialable for starting day')
+    break
+  }
+  temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
+  the_temps_init <- temp_inter(the_depths_init)
   }
   
+#  #SET UP INITIAL CONDITIONS
+#  if(USE_OBS_DEPTHS){
+#    nlayers_init <- length(TempObservedDepths)
+#    the_depths_init <- TempObservedDepths
+#    the_temps_init <- init_temps1
+#  }else{
+#    the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+#    nlayers_init <- length(the_depths_init)
+#    the_temps_init <- temp_inter(the_depths_init)
+#    do_init <- rep(NA,length(the_depths_init))
+#    do_init[1:13] <- obs_do$obs[1,1]
+#    do_init[14:23] <- obs_do$obs[1,2]
+#    do_init[24:29] <- obs_do$obs[1,3]
+#  }
+  
+  #SET UP INITIAL CONDITIONS
+
+
   temp_start <- 1
   temp_end <- length(the_depths_init)
   wq_start <- rep(NA,num_wq_vars)
@@ -296,11 +318,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   update_var(wq_init_vals,'wq_init_vals',workingGLM)
   update_var(num_wq_vars,'num_wq_vars',workingGLM)
-  update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
-  update_var(lake_depth_init,'lake_depth',workingGLM)
+  #update_var(lake_depth_init,'lake_depth',workingGLM)
   update_var(nlayers_init,'num_depths',workingGLM)
-  update_var(the_temps_init,'the_temps',workingGLM)
+  #update_var(the_temps_init,'the_temps',workingGLM)
   update_var(the_depths_init,'the_depths',workingGLM)
+  
+  update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
   
   update_var(Kw,'Kw',workingGLM)
   update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
