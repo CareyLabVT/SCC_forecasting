@@ -9,8 +9,8 @@ library(lubridate)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
-start_day <- '2018-08-25 00:00:00'
-num_days <- 17
+start_day <- '2018-08-10 00:00:00'
+num_days <- 2
 #--------
 #   Use launch_mode <- 1 if you want to schedule the forecast to run at a certain time
 #   Use launch_mode <-2 if you want to the forecast to lauch at a given time interval
@@ -22,7 +22,7 @@ launch_mode <- 2
 #-------
 launch_time <- 60*60*2.5  #"12:00:00"
 
-push_to_git <- TRUE
+push_to_git <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))

@@ -1,8 +1,7 @@
 run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE){
   
   ###RUN OPTIONS
-  #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
-  nEnKFmembers <- 4
+  nEnKFmembers <- 30
   nMETmembers <- 21
   nmembers = nEnKFmembers*nMETmembers
   
@@ -139,8 +138,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   
   #Initial States
-  lake_depth_init <- 10.0  #not a modeled state
-  the_sals_init <- 0.5
+  lake_depth_init <- 9.4  #not a modeled state
+  the_sals_init <- 0.0
   OXY_oxy_init <- 300.62
   CAR_pH_init <- 6.5
   CAR_dic_init <- 59.1
@@ -165,22 +164,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   PHY_DIATOMPCH4_init <- 2.0
   
   #Parameters
-  Kw <- 0.86
-  coef_mix_conv <- 0.2
-  coef_wind_stir <- 0.23
-  coef_mix_shear <- 0.2
-  coef_mix_turb <- 0.51
-  coef_mix_KH <- 0.3
-  coef_mix_hyp <- 0.5
-  wind_factor <- 1
-  sw_factor <- 0.7
-  lw_factor <- 1
-  at_factor <- 1
-  rh_factor <- 1
-  rain_factor <- 1
-  cd <- 0.0013
-  ce <- 0.0013
-  ch <- 0.0013
+  #Kw <- 0.86
+  #coef_mix_conv <- 0.2
+  #coef_wind_stir <- 0.23
+  #coef_mix_shear <- 0.2
+  #coef_mix_turb <- 0.51
+  #coef_mix_KH <- 0.3
+  #coef_mix_hyp <- 0.5
+  #wind_factor <- 1
+  sw_factor <- 0.9
+  #lw_factor <- 1
+  #at_factor <- 1
+  #rh_factor <- 1
+  #rain_factor <- 1
+  #cd <- 0.0013
+  #ce <- 0.0013
+  #ch <- 0.0013
   
   #PROCESS TEMPERATURE OBSERVATIONS
   #if(!use_CTD){
@@ -326,22 +325,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
   
-  update_var(Kw,'Kw',workingGLM)
-  update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
-  update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
-  update_var(coef_mix_shear,'coef_mix_shear',workingGLM)
-  update_var(coef_mix_turb,'coef_mix_turb',workingGLM)
-  update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
-  update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
-  update_var(wind_factor,'wind_factor',workingGLM)
-  update_var(sw_factor,'sw_factor',workingGLM)
-  update_var(lw_factor,'lw_factor',workingGLM)
-  update_var(at_factor,'at_factor',workingGLM)
-  update_var(rh_factor,'rh_factor',workingGLM)
-  update_var(rain_factor,'rain_factor',workingGLM)
-  update_var(cd,'cd',workingGLM)
-  update_var(ce,'ce',workingGLM)
-  update_var(ch,'ch',workingGLM)
+  #update_var(Kw,'Kw',workingGLM)
+  #update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
+  #update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
+  #update_var(coef_mix_shear,'coef_mix_shear',workingGLM)
+  #update_var(coef_mix_turb,'coef_mix_turb',workingGLM)
+  #update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
+  #update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
+  #update_var(wind_factor,'wind_factor',workingGLM)
+  #update_var(sw_factor,'sw_factor',workingGLM)
+  #update_var(lw_factor,'lw_factor',workingGLM)
+  #update_var(at_factor,'at_factor',workingGLM)
+  #update_var(rh_factor,'rh_factor',workingGLM)
+  #update_var(rain_factor,'rain_factor',workingGLM)
+  #update_var(cd,'cd',workingGLM)
+  #update_var(ce,'ce',workingGLM)
+  #update_var(ch,'ch',workingGLM)
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
@@ -392,7 +391,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #Process error 
   
   thermo_depth_error <- 0.1
-  temp_error <- 0.1
+  temp_error <- 0.5
   #cross_var <-0.0
   #Qt_init <- diag(temps_variance_init, nstates)
   #Qt <- diag(temps_variance, nstates)
@@ -463,7 +462,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   x[1,,] <- as.matrix(x_previous)
   
   parameter_matrix <- array(NA,dim=c(nmembers,3))
-  parameter_matrix[,1] <- rnorm(nmembers,1.0,0.05)
+  parameter_matrix[,1] <- rnorm(nmembers,sw_factor,0.2)
   parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
   parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   #Matrix to store ensemble specific deviations and innovations
