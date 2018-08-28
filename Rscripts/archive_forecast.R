@@ -1,4 +1,4 @@
-archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,forecast_location){
+archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,forecast_location,push_to_git){
   ###ARCHIVE AND CLEAN UP FORECAST
   unlink(paste0(workingGLM,'/','FCRmet.csv'),recursive = FALSE)
   unlink(paste0(workingGLM,'/','Catwalk.csv'),recursive = FALSE)
@@ -14,5 +14,12 @@ archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,fore
   dir.create(forecast_archive_dir)
   files <- list.files(paste0(workingGLM))
   tmp <- file.copy(files, forecast_archive_dir)
+  zip(zipfile = forecast_archive_dir,files = files)
+  if(push_to_git){
+    setwd(forecast_location)
+    system(paste0('git add ',forecast_archive_dir_name,'.zip'))
+    system('git commit -m "forecast"')
+    system('git push')
+  }
   return(list(forecast_archive_dir_name))
 }

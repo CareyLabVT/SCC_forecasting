@@ -8,8 +8,8 @@ library(ncdf4)
 library(lubridate)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
-forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/temp_forecast/' 
-current_day <- '2018-08-10 00:00:00'
+forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
+start_day <- '2018-08-25 00:00:00'
 num_days <- 17
 #--------
 #   Use launch_mode <- 1 if you want to schedule the forecast to run at a certain time
@@ -22,39 +22,44 @@ launch_mode <- 2
 #-------
 launch_time <- 60*60*2.5  #"12:00:00"
 
+push_to_git <- TRUE
+
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 
 #FIRST DAY
 out <- run_forecast(
-  first_day = current_day,
+  first_day = start_day,
   sim_name = NA, 
   hist_days = 1,
   forecast_days = 0,
   restart_file = NA,
   Folder = Folder,
-  forecast_location = forecast_location
+  forecast_location = forecast_location,
+  push_to_git=push_to_git
 )
 
 day_count <- 0
 #ALL SUBSEQUENT DAYS
 repeat {
-  startTime <- Sys.time()
-  if((as.POSIXct(current_day, format = "%Y-%m-%d %H:%M:%S") + days(1)  > Sys.time()) | day_count > num_days){
-    #There won't be a NOAA forecast avaialable so end the forecasting
-    break
+  if((as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")  + days(2)  > Sys.time()) | day_count > num_days){
+  break
   }
+  
+  startTime <- Sys.time()
+
   #ADVANCE TO NEXT DAY
-  tmp <- as.POSIXct(current_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
-  current_day <- paste0(strftime(tmp,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
+  tmp <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
+  start_day <- paste0(strftime(tmp,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
   out <- run_forecast(
-    first_day= current_day,
+    first_day= start_day,
     sim_name = NA, 
     hist_days = 1,
     forecast_days = 10,
     restart_file = paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[1]),
     Folder = Folder,
-    forecast_location = forecast_location
+    forecast_location = forecast_location,
+    push_to_git=push_to_git
   )
   day_count <- day_count + 1
   if(launch_mode == 2){

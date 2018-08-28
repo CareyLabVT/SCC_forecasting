@@ -1,4 +1,4 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, forecast_location = NA){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15, restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE){
   
   ###RUN OPTIONS
   #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -661,7 +661,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
 
   ##ARCHIVE FORECAST
-  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location)
+  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location,push_to_git)
   
   return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
 }
