@@ -187,7 +187,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
     for(i in 1:length(obs_temp$obs[,1])){
       for(j in 1:length(obs_temp$obs[1,])){
-        if(obs_temp$obs[i,j] == 0){
+        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j])){
           obs_temp$obs[i,j] = NA
         } 
       }
@@ -518,11 +518,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         
       }
       
-      if(i == (hist_days+1)){
-        restart_file_name <- paste0('restart_',year(full_time[i+1]),'_',month(full_time[i+1]),'_',day(full_time[i+1]),'.csv')
-        write.csv(x[i-1,,],paste0(workingGLM,'/',restart_file_name),row.names = FALSE)
-      }
-      
       #3) Use GLM NML files to run GLM for a day
       system(paste0(workingGLM,'/','glm'))
       
@@ -641,6 +636,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         }
       }
       
+
       #print('here')
       #print(curr_start)
       #print(Kt)
@@ -651,6 +647,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #readline(prompt="Press [enter] to continue")
       if(length(which(is.na(x[i,,]))) > 0){dies = i}
     }
+    if(i == (hist_days+1)){
+      restart_file_name <- paste0('restart_',year(full_time[i]),'_',month(full_time[i]),'_',day(full_time[i]),'.csv')
+      write.csv(x[i,,],paste0(workingGLM,'/',restart_file_name),row.names = FALSE)
+    }
+    
   }
   
   ###SAVE FORECAST
