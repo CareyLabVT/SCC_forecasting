@@ -1,6 +1,6 @@
 
 extract_temp_chain <- function(fname,full_time){
-  d <- read.csv(fname, skip =3)
+  d <- read.csv(fname, skip =4, na.strings = 'NAN')
   d_names <- read.csv(fname, skip =1)
   names(d) <- names(d_names)
   
@@ -11,9 +11,17 @@ extract_temp_chain <- function(fname,full_time){
   full_time <- as.POSIXct(full_time)
   for(i in 1:length(full_time)){
     index = which(d$TIMESTAMP==full_time[i])
-    
     if(length(index)>0){
       obs[i,] <- unlist(d[index,5:14])
+      if(is.na(obs[i,2]) & !is.na(d[index,23])){
+        obs[i,2] <- d[index,23]
+      }
+      if(is.na(obs[i,6]) & !is.na(d[index,17])){
+        obs[i,6] <- d[index,17]
+      }
+      if(is.na(obs[i,10]) & !is.na(d[index,20])){ 
+        obs[i,10] <- d[index,20]
+      }
     }
   }
   

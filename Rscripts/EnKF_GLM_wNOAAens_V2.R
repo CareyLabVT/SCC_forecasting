@@ -186,7 +186,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
     for(i in 1:length(obs_temp$obs[,1])){
       for(j in 1:length(obs_temp$obs[1,])){
-        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j])){
+        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
           obs_temp$obs[i,j] = NA
         } 
       }
@@ -390,8 +390,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #Process error 
   
-  thermo_depth_error <- 0.1
-  temp_error <- 0.5
+  thermo_depth_error <- 0.2
+  temp_error <- 0.2
   #cross_var <-0.0
   #Qt_init <- diag(temps_variance_init, nstates)
   #Qt <- diag(temps_variance, nstates)
@@ -462,7 +462,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   x[1,,] <- as.matrix(x_previous)
   
   parameter_matrix <- array(NA,dim=c(nmembers,3))
-  parameter_matrix[,1] <- rnorm(nmembers,sw_factor,0.2)
+  parameter_matrix[,1] <- rnorm(nmembers,sw_factor,0.05)
   parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
   parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   #Matrix to store ensemble specific deviations and innovations

@@ -31,7 +31,7 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 out <- run_forecast(
   first_day = start_day,
   sim_name = NA, 
-  hist_days = 1,
+  hist_days = 18,
   forecast_days = 0,
   restart_file = NA,
   Folder = Folder,
