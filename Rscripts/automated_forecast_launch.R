@@ -43,7 +43,10 @@ day_count <- 0
 #ALL SUBSEQUENT DAYS
 repeat {
   if((as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")  + days(2)  > Sys.time()) | day_count > num_days){
-  break
+    sleepTime <- hours(2)
+    if (sleepTime > 0){
+      Sys.sleep(sleepTime)
+    }
   }
   
   startTime <- Sys.time()
