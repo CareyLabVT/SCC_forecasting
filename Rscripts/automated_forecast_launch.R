@@ -9,18 +9,13 @@ library(lubridate)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
-start_day <- '2018-08-10 00:00:00'
+start_day <- '2018-08-30 00:00:00'
+forecast_start_day <- '2018-08-31 00:00:00'
+
+hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
+
 num_days <- 2
-#--------
-#   Use launch_mode <- 1 if you want to schedule the forecast to run at a certain time
-#   Use launch_mode <-2 if you want to the forecast to lauch at a given time interval
-#-------
-launch_mode <- 2
-#--------
-#   if launch_mode == 1: launch_time corresponds to the time of launch
-#   if launch_mode == 2: launch_time corresponds to the time between launches
-#-------
-launch_time <- 60*60*2.5  #"12:00:00"
+wait_time <- 60*60*2.5
 
 push_to_git <- FALSE
 
@@ -31,7 +26,7 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 out <- run_forecast(
   first_day = start_day,
   sim_name = NA, 
-  hist_days = 18,
+  hist_days = hist_days,
   forecast_days = 0,
   restart_file = NA,
   Folder = Folder,
@@ -42,18 +37,38 @@ out <- run_forecast(
 day_count <- 0
 #ALL SUBSEQUENT DAYS
 repeat {
-  if((as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")  + days(2)  > Sys.time()) | day_count > num_days){
-    sleepTime <- hours(2)
-    if (sleepTime > 0){
-      Sys.sleep(sleepTime)
-    }
-  }
   
   startTime <- Sys.time()
-
+  
   #ADVANCE TO NEXT DAY
   tmp <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
   start_day <- paste0(strftime(tmp,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
+  
+  forecast_avialable = FALSE
+  while(forecast_avialable == FALSE){
+    forecast_start_time <- start_day + days(1)
+    if(day(forecast_start_time) < 10){
+      forecast_day <- paste0('0',day(forecast_start_time))
+    }else{
+      forecast_day <- paste0(day(forecast_start_time))
+    }
+    if(month(forecast_start_time) < 10){
+      forecast_month <- paste0('0',month(forecast_start_time))
+    }else{
+      forecast_month <- paste0(month(forecast_start_time))
+    }
+    forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z.csv')
+    
+    tmp <-getURL(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name))
+    tmp <- unlist(strsplit(tmp, '<'))
+    if(tmp[2] == "!DOCTYPE html>\n"){
+      print('Waiting for NOAA forecast')
+      Sys.sleep(wait_time)
+    }else{
+      forecast_avialable = TRUE
+    }
+  }
+  
   out <- run_forecast(
     first_day= start_day,
     sim_name = NA, 
@@ -65,15 +80,5 @@ repeat {
     push_to_git=push_to_git
   )
   day_count <- day_count + 1
-  if(launch_mode == 2){
-    sleepTime <- startTime + launch_time - Sys.time()
-  }else if(launch_mode == 1){
-    tmp <- as.POSIXct(Sys.time(), format = "%Y-%m-%d %H:%M:%S") + days(1)
-    next_launch <- paste0(strftime(tmp,format = "%Y-%m-%d",usetz = FALSE)," ",launch_time)
-    sleepTime <- as.POSIXct(next_launch) - Sys.time()
-  }
-  sleepTime <- startTime + days(1) - Sys.time()
-  if (sleepTime > 0){
-    Sys.sleep(sleepTime)
-  }
+
 }

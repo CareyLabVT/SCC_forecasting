@@ -82,7 +82,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   ###DOWNLOAD FILES TO WORKING DIRECTORY
   download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
   download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
-  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data','/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
+  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
   ###CREATE HISTORICAL MET FILE
   obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
