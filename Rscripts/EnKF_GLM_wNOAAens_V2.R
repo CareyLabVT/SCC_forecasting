@@ -81,7 +81,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
   download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
-  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+  #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+  file.copy(from = '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Catwalk.csv', to = paste0(workingGLM,'/','Catwalk.csv'),overwrite = TRUE)
   download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
   ###CREATE HISTORICAL MET FILE
@@ -172,8 +173,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #coef_mix_KH <- 0.3
   #coef_mix_hyp <- 0.5
   #wind_factor <- 1
-  sw_factor <- 0.9
-  #lw_factor <- 1
+  sw_factor <- 0.95
+  lw_factor <- 0.95
   #at_factor <- 1
   #rh_factor <- 1
   #rain_factor <- 1
@@ -333,8 +334,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
   #update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
   #update_var(wind_factor,'wind_factor',workingGLM)
-  #update_var(sw_factor,'sw_factor',workingGLM)
-  #update_var(lw_factor,'lw_factor',workingGLM)
+  update_var(sw_factor,'sw_factor',workingGLM)
+  update_var(lw_factor,'lw_factor',workingGLM)
   #update_var(at_factor,'at_factor',workingGLM)
   #update_var(rh_factor,'rh_factor',workingGLM)
   #update_var(rain_factor,'rain_factor',workingGLM)
@@ -390,8 +391,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #Process error 
   
-  thermo_depth_error <- 0.2
+  thermo_depth_error <- 0.1
   temp_error <- 0.2
+  top_temp_error <- 0.5
+  bottom_temp_error <- 0.1
   #cross_var <-0.0
   #Qt_init <- diag(temps_variance_init, nstates)
   #Qt <- diag(temps_variance, nstates)
@@ -429,7 +432,20 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     }else{
       #x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt_init))
       for(m in 1:nmembers){
-        corr_temps <- the_temps_init + rnorm(1,0,temp_error)
+        #corr_temps <- the_temps_init + rnorm(1,0,temp_error)
+        #corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+        #corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+        
+        top <- rnorm(1,0,top_temp_error)
+        if(top > 0){
+          bottom <- runif(1,0,top*0.5)
+        }else{
+          bottom <- runif(1,top*0.5,0)
+        }
+        
+        tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
+        
+        corr_temps <- the_temps_init + tmp(the_depths_init)
         corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
         corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
         x[1,m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
@@ -492,7 +508,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
-      update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
+      #update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
       #update_var(parameter_matrix[m,2],'wind_factor',workingGLM)
       #update_var(parameter_matrix[m,3],'cd',workingGLM)
       
@@ -537,8 +553,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         met_index <- 1
       }
       
-      corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error)
+      #corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error)
+      #corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+      
+      top <- rnorm(1,0,top_temp_error)
+      if(top > 0){
+        bottom <- runif(1,0,top*0.5)
+      }else{
+        bottom <- runif(1,top*0.5,0)
+      }
+      
+      tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
+      corr_temps <- x_star[m,temp_start:temp_end] + tmp(the_depths_init)
       corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+      corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+      
+      
 
       corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
       x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)

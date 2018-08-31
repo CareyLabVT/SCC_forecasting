@@ -9,7 +9,7 @@ library(lubridate)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
-start_day <- '2018-08-30 00:00:00'
+start_day <- '2018-08-29 00:00:00'
 forecast_start_day <- '2018-08-31 00:00:00'
 
 hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
@@ -26,7 +26,7 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 out <- run_forecast(
   first_day = start_day,
   sim_name = NA, 
-  hist_days = hist_days,
+  hist_days = hist_days-1,
   forecast_days = 0,
   restart_file = NA,
   Folder = Folder,
@@ -35,15 +35,17 @@ out <- run_forecast(
 )
 
 day_count <- 0
+
+#ADVANCE TO NEXT DAY
+start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
+
 #ALL SUBSEQUENT DAYS
 repeat {
   
   startTime <- Sys.time()
   
-  #ADVANCE TO NEXT DAY
-  tmp <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
-  start_day <- paste0(strftime(tmp,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
-  
+
+  #LOOP TO KEEP CHECKING FOR A NOAA FORECAST
   forecast_avialable = FALSE
   while(forecast_avialable == FALSE){
     forecast_start_time <- start_day + days(1)
@@ -69,6 +71,8 @@ repeat {
     }
   }
   
+  start_day <- paste0(strftime(start_day,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
+  
   out <- run_forecast(
     first_day= start_day,
     sim_name = NA, 
@@ -80,5 +84,8 @@ repeat {
     push_to_git=push_to_git
   )
   day_count <- day_count + 1
+  
+  #ADVANCE TO NEXT DAY
+  start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
 
 }
