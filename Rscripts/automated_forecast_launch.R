@@ -17,7 +17,7 @@ hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-
 num_days <- 2
 wait_time <- 60*60*2.5
 
-push_to_git <- FALSE
+push_to_git <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -77,7 +77,7 @@ repeat {
     first_day= start_day,
     sim_name = NA, 
     hist_days = 1,
-    forecast_days = 10,
+    forecast_days = 15,
     restart_file = paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[1]),
     Folder = Folder,
     forecast_location = forecast_location,
