@@ -1,9 +1,13 @@
-evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
+evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6',forecast_location){
   ###LOAD FORECAST FOR ANALYSIS
   #sim_name = '2018_7_6'
   #forecast_folder = 'forecast_2018_7_6_2018726_12_9'
   #Folder = '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
+  if(is.na(forecast_location)){
   forecast_folder = paste0(Folder,'/','Forecasts','/',forecast_folder)
+  }else{
+    forecast_folder = paste0(forecast_location,'/',forecast_folder)
+  }
   evaluation_folder <- paste0(forecast_folder,'/','evaluation')
   load(file = paste0(forecast_folder,'/',sim_name,'_EnKF_output.Rdata'))
   
@@ -137,8 +141,9 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   
   glm_prediction <- get_temp(file = "output.nc", reference = "surface", z_out = the_depths_init)
   
+
   ###PLOT FORECAST
-  pdf(paste0(evaluation_folder,'/',sim_name,'_EnKF_output.pdf'))
+ pdf(paste0(evaluation_folder,'/',sim_name,'_EnKF_output.pdf'))
   par(mfrow=c(4,3))
   
   z = z_obs
@@ -153,7 +158,6 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
     }
     #if(!is.na(obs)){
     ylim = range(c(x[,,],c(z[,])),na.rm = TRUE)
-    as.POSIXct(full_time)
     plot(as.POSIXct(full_time_day),x[,1,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',the_depths_init[i],' m',sep=''),ylim=ylim)
     if(nmembers > 1){
       for(m in 2:nmembers){
@@ -250,7 +254,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   }
   points(as.POSIXct(o$time),o$LongWave,col='red',type='l')
   
-  ylim = range(c(RelHum,o$RelHum))
+  ylim = range(c(RelHum,o$RelHum),na.rm = TRUE)
   plot(y[include_times],RelHum[1,include_times],type='l',ylab='Rel Hum',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
@@ -260,7 +264,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   points(as.POSIXct(o$time),o$RelHum,col='red',type='l')
   
   
-  ylim = range(c(WindSpeed,o$WindSpeedHum))
+  ylim = range(c(WindSpeed,o$WindSpeedHum),na.rm = TRUE)
   plot(y[include_times],WindSpeed[1,include_times],type='l',ylab='Wind Speed',xlab = 'days in future',ylim=ylim)
   if(nMETmembers > 1){
     for(m in 2:nMETmembers){
@@ -279,5 +283,7 @@ evaluate_forecast <- function(forecast_folder,Folder,sim_name = '2018_7_6'){
   points(as.POSIXct(o$time),o$Rain,col='red',type='l')
   
   dev.off()
+  
+  save(glm_prediction,z,full_time_day,x,file=paste0(evaluation_folder,'/',sim_name,'model_compare.Rdata'))
 
 }

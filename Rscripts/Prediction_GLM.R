@@ -2,9 +2,9 @@ library(mvtnorm)
 library(ncdf4)
 library(lubridate)
 
-first_day <- '2018-07-06 00:00:00'
+first_day <- '2018-08-29 00:00:00'
 sim_name <- NA
-hist_days <- 10
+hist_days <- 5
 forecast_days <- 0
 restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -17,11 +17,12 @@ nMETmembers <- 1
 nmembers = nEnKFmembers*nMETmembers
 
 use_CTD <- FALSE
-include_wq <- TRUE
+include_wq <- FALSE
 NO_UNCERT <- FALSE
 ADD_NOISE_TO_OBS <- FALSE
 USE_OBS_DEPTHS <- FALSE
 USE_OBS_CONTRAINT <- TRUE
+UPDATE_STATES_W_OBS <- FALSE
 
 ###CREATE TIME VECTOR
 begin_sim  <- as.POSIXct(first_day)
@@ -127,28 +128,32 @@ wq_names <- c('OXY_oxy',
               'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
 num_wq_vars <- length(wq_names) 
 
+if(include_wq){
 glm_output_vars <- c('temp',wq_names)
+}else{
+  glm_output_vars <- c('temp')
+}
 
 the_sals_init <- 0.5
 
 
 #Parameters
-Kw <- 0.86
-coef_mix_conv <- 0.2
-coef_wind_stir <- 0.23
-coef_mix_shear <- 0.2
-coef_mix_turb <- 0.51
-coef_mix_KH <- 0.3
-coef_mix_hyp <- 0.5
-wind_factor <- 1
-sw_factor <- 0.7
-lw_factor <- 1
-at_factor <- 1
-rh_factor <- 1
-rain_factor <- 1
-cd <- 0.0013
-ce <- 0.0013
-ch <- 0.0013
+#Kw <- 0.86
+#coef_mix_conv <- 0.2
+#coef_wind_stir <- 0.23
+#coef_mix_shear <- 0.2
+#coef_mix_turb <- 0.51
+#coef_mix_KH <- 0.3
+#coef_mix_hyp <- 0.5
+#wind_factor <- 1
+sw_factor <- 0.95
+lw_factor <- 0.95
+#at_factor <- 1
+#rh_factor <- 1
+#rain_factor <- 1
+#cd <- 0.0013
+#ce <- 0.0013
+#ch <- 0.0013
 
 lake_depth_init <- 9.4
 
@@ -261,22 +266,22 @@ update_var(nlayers_init,'num_depths',workingGLM)
 update_var(the_temps_init,'the_temps',workingGLM)
 update_var(the_depths_init,'the_depths',workingGLM)
 
-update_var(Kw,'Kw',workingGLM)
-update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
-update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
-update_var(coef_mix_shear,'coef_mix_shear',workingGLM)
-update_var(coef_mix_turb,'coef_mix_turb',workingGLM)
-update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
-update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
-update_var(wind_factor,'wind_factor',workingGLM)
+#update_var(Kw,'Kw',workingGLM)
+#update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
+#update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
+#update_var(coef_mix_shear,'coef_mix_shear',workingGLM)
+#update_var(coef_mix_turb,'coef_mix_turb',workingGLM)
+#update_var(coef_mix_KH,'coef_mix_KH',workingGLM)
+#update_var(coef_mix_hyp,'coef_mix_hyp',workingGLM)
+#update_var(wind_factor,'wind_factor',workingGLM)
 update_var(sw_factor,'sw_factor',workingGLM)
 update_var(lw_factor,'lw_factor',workingGLM)
-update_var(at_factor,'at_factor',workingGLM)
-update_var(rh_factor,'rh_factor',workingGLM)
-update_var(rain_factor,'rain_factor',workingGLM)
-update_var(cd,'cd',workingGLM)
-update_var(ce,'ce',workingGLM)
-update_var(ch,'ch',workingGLM)
+#update_var(at_factor,'at_factor',workingGLM)
+#update_var(rh_factor,'rh_factor',workingGLM)
+#update_var(rain_factor,'rain_factor',workingGLM)
+#update_var(cd,'cd',workingGLM)
+#update_var(ce,'ce',workingGLM)
+#update_var(ch,'ch',workingGLM)
 
 #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
 if(include_wq){
@@ -304,6 +309,7 @@ z_obs <- z
 if(!USE_OBS_CONTRAINT){
   z[,] <- NA
 }
+
 
 #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
 if(include_wq){
@@ -335,7 +341,11 @@ x <- array(NA,dim=c(nsteps,nstates))
 
 
 #Set initial conditions
+if(include_wq){
 x[1,] <- c(the_temps_init,wq_init_vals)
+}else{
+  x[1,] <- c(the_temps_init)
+}
 
 surface_height <- array(NA,dim=c(nsteps))
 surface_height[1] <- lake_depth_init
@@ -362,6 +372,7 @@ for(i in 2:nsteps){
   #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
   tmp <- update_temps(curr_temps = x[i-1,temp_start:temp_end],the_depths_init,workingGLM)
   update_var(surface_height[i-1],'lake_depth',workingGLM)
+  #print(x[i-1,temp_start:temp_end])
   
   if(include_wq){
     wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
@@ -369,11 +380,11 @@ for(i in 2:nsteps){
   }
   
   #3) Use GLM NML files to run GLM for a day
-  if(machine == 'mac'){
-    system(paste0(workingGLM,"glm"))
-  }else if(machine == 'unix'){
-    system(paste0(workingGLM,"glm"))
-  }
+  #if(machine == 'mac'){
+  #  system(paste0(workingGLM,"glm"))
+  #}else if(machine == 'unix'){
+  #  system(paste0(workingGLM,"glm"))
+  #}
   
   system(paste0(workingGLM,"glm"))
   GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
@@ -388,7 +399,10 @@ for(i in 2:nsteps){
   }else{
     GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
     x_star[temp_start:temp_end] <- GLMtemps 
+    surface_height[i] <- GLM_temp_wq_out$surface_height 
   }
+  print(x[i-1,temp_start:temp_end])
+  print(GLMtemps)
   
   
   
@@ -414,13 +428,39 @@ for(i in 2:nsteps){
     obs = zt
     
     model_obs_array[1,i,] = x_star
+    #print(x_star)
     model_obs_array[2,i,obs_index] = z[i,z_index]
     model_obs_array[3,i,] = ndays
     
-
-    x[i,] = x_star
+    if(UPDATE_STATES_W_OBS & !include_wq){
+    temp_inter <- approxfun(TempObservedDepths,z[i,z_index],rule=2)
+    the_temps_init <- temp_inter(the_depths_init)
+    x[i,] =  the_temps_init
+    }else{
+      x[i,] =  x_star
+    }
     ndays = 1
   }
+}
+
+
+plot(model_obs_array[1,,1])
+points(model_obs_array[2,,1],col='red')
+
+plot(model_obs_array[1,,1])
+points(model_obs_array[2,,1],col='red')
+
+i = 2
+z_index = 1
+plot(model_obs_array[1,,z_states[i,z_index]],type = 'o',ylim=c(5,35))
+points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')
+for(z_index in 1:10){
+points(model_obs_array[1,,z_states[i,z_index]],col='black',type = 'o')
+points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')
+}
+i = 2
+for(z_index in 1:10){
+print(sqrt(mean((model_obs_array[1,,z_states[i,z_index]] - model_obs_array[2,,z_states[i,z_index]])^2,na.rm = TRUE)))
 }
 
 lim<- range(x[,wq_start[16]:wq_end[16]],na.rm = TRUE)

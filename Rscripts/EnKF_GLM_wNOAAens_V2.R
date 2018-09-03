@@ -391,7 +391,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #Process error 
   
-  thermo_depth_error <- 0.1
+  thermo_depth_error <- 0.15
   temp_error <- 0.2
   top_temp_error <- 0.5
   bottom_temp_error <- 0.1
@@ -572,8 +572,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
 
       corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
       x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
-      plot(x_star[m,temp_start:temp_end],rev(the_depths_init),xlim=c(0,31))
-      points(corrupt_profile(the_depths_init),rev(the_depths_init),col='red')
+      #plot(x_star[m,temp_start:temp_end],rev(the_depths_init),xlim=c(0,31))
+      #points(corrupt_profile(the_depths_init),rev(the_depths_init),col='red')
       
     }
     
