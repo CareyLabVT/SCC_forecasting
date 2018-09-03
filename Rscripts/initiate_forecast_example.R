@@ -34,7 +34,8 @@ evaluate_forecast(
 evaluate_forecast(
   forecast_folder = unlist(out)[3],
   Folder = Folder,
-  sim_name = unlist(out)[2]
+  sim_name = unlist(out)[2],
+  forecast_location = NA 
 )
 
 ## EXAMPLE OF LAUCHING A FORECAST FROM A PREVIOUS STEP THROUGH THE ENKF

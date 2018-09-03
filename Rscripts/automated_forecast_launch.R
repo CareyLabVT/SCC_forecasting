@@ -10,14 +10,14 @@ library(lubridate)
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 start_day <- '2018-08-29 00:00:00'
-forecast_start_day <- '2018-08-31 00:00:00'
+forecast_start_day <- '2018-09-03 00:00:00'
 
 hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
 
 num_days <- 2
 wait_time <- 60*60*2.5
 
-push_to_git <- TRUE
+push_to_git <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -25,7 +25,7 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 #FIRST DAY
 out <- run_forecast(
   first_day = start_day,
-  sim_name = NA, 
+  sim_name = 'test_historical', 
   hist_days = hist_days-1,
   forecast_days = 0,
   restart_file = NA,
