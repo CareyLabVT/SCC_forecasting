@@ -392,9 +392,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #Process error 
   
   thermo_depth_error <- 0.15
-  temp_error <- 0.2
-  top_temp_error <- 0.5
-  bottom_temp_error <- 0.1
+  temp_error <- 0.5
+  #top_temp_error <- 0.5
+  #bottom_temp_error <- 0.1
   #cross_var <-0.0
   #Qt_init <- diag(temps_variance_init, nstates)
   #Qt <- diag(temps_variance, nstates)
@@ -436,16 +436,16 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         #corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
         #corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
         
-        top <- rnorm(1,0,top_temp_error)
-        if(top > 0){
-          bottom <- runif(1,0,top*0.5)
-        }else{
-          bottom <- runif(1,top*0.5,0)
-        }
+        #top <- rnorm(1,0,top_temp_error)
+        #if(top > 0){
+        #  bottom <- runif(1,0,top*0.5)
+        #}else{
+        #  bottom <- runif(1,top*0.5,0)
+        #}
         
-        tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
+        #tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
         
-        corr_temps <- the_temps_init + tmp(the_depths_init)
+        corr_temps <- the_temps_init + rnorm(1,0,temp_error) #tmp(the_depths_init)
         corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
         corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
         x[1,m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
@@ -556,15 +556,15 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error)
       #corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
       
-      top <- rnorm(1,0,top_temp_error)
-      if(top > 0){
-        bottom <- runif(1,0,top*0.5)
-      }else{
-        bottom <- runif(1,top*0.5,0)
-      }
+      #top <- rnorm(1,0,top_temp_error)
+      #if(top > 0){
+      #  bottom <- runif(1,0,top*0.5)
+      #}else{
+      #  bottom <- runif(1,top*0.5,0)
+      #}
       
-      tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
-      corr_temps <- x_star[m,temp_start:temp_end] + tmp(the_depths_init)
+      #tmp <- approxfun(c(0.1,9),c(top,bottom),rule = 2)
+      corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error) #tmp(the_depths_init)
       corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
       corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
       
@@ -683,14 +683,20 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     
   }
   
+  if(forecast_days >0){
+  save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_forecast_',
+                                      year(full_time[hist_days+1]),'_',month(full_time[hist_days+1]),'_',day(full_time[hist_days+1]))
+  }else{
+    save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))    
+  }
   ###SAVE FORECAST
-  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,file = paste0(workingGLM,'/',sim_name,'_EnKF_output.Rdata'))
+  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
 
   ##PLOT FORECAST
-  plot_forecast(workingGLM = workingGLM,sim_name = sim_name)
+  plot_forecast(workingGLM = workingGLM,sim_name = save_file_name)
 
   ##ARCHIVE FORECAST
-  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location,push_to_git)
+  archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location,push_to_git,save_file_name)
   
   return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
 }

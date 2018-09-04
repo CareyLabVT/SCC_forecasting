@@ -9,15 +9,16 @@ library(lubridate)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
-start_day <- '2018-08-29 00:00:00'
-forecast_start_day <- '2018-09-03 00:00:00'
+start_day <- '2018-07-15 00:00:00'
+forecast_start_day <- '2018-09-04 00:00:00'
+num_forecast_days <- NA  #Set to NA if 
 
 hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
 
-num_days <- 2
+
 wait_time <- 60*60*2.5
 
-push_to_git <- FALSE
+push_to_git <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -34,17 +35,16 @@ out <- run_forecast(
   push_to_git=push_to_git
 )
 
-day_count <- 0
 
 #ADVANCE TO NEXT DAY
 start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
-
+forecast_day_count <- 1
 #ALL SUBSEQUENT DAYS
 repeat {
   
   startTime <- Sys.time()
   
-
+  
   #LOOP TO KEEP CHECKING FOR A NOAA FORECAST
   forecast_avialable = FALSE
   while(forecast_avialable == FALSE){
@@ -83,9 +83,14 @@ repeat {
     forecast_location = forecast_location,
     push_to_git=push_to_git
   )
-  day_count <- day_count + 1
+  forecast_day_count <- forecast_day_count + 1
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
-
+  if(!is.na(num_forecast_days)){
+    if(forecast_day_count > num_forecast_days){
+      break
+    }
+  }
+  
 }

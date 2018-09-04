@@ -1,6 +1,6 @@
 plot_forecast <- function(workingGLM,sim_name){
   ###LOAD FORECAST FOR ANALYSIS
-  load(file = paste0(workingGLM,'/',sim_name,'_EnKF_output.Rdata'))
+  load(file = paste0(workingGLM,'/',sim_name,'_output.Rdata'))
 
   ###PLOT FORECAST
   pdf(paste0(workingGLM,'/',sim_name,'_forecast.pdf'))

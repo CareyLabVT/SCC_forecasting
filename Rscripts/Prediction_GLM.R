@@ -1,6 +1,8 @@
 library(mvtnorm)
 library(ncdf4)
 library(lubridate)
+if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
+library(glmtools)
 
 first_day <- '2018-08-29 00:00:00'
 sim_name <- NA
@@ -428,7 +430,7 @@ for(i in 2:nsteps){
     obs = zt
     
     model_obs_array[1,i,] = x_star
-    #print(x_star)
+    print(x_star)
     model_obs_array[2,i,obs_index] = z[i,z_index]
     model_obs_array[3,i,] = ndays
     
