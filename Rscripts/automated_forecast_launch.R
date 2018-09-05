@@ -18,7 +18,7 @@ hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-
 
 wait_time <- 60*60*2.5
 
-push_to_git <- TRUE
+push_to_git <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -26,9 +26,10 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 #FIRST DAY
 out <- run_forecast(
   first_day = start_day,
-  sim_name = 'test_historical', 
+  sim_name = 'test_historical_varKw_0.6start', 
   hist_days = hist_days-1,
   forecast_days = 0,
+  spin_up_days = 0,
   restart_file = NA,
   Folder = Folder,
   forecast_location = forecast_location,
@@ -78,6 +79,7 @@ repeat {
     sim_name = NA, 
     hist_days = 1,
     forecast_days = 15,
+    spin_up_days = 0,
     restart_file = paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[1]),
     Folder = Folder,
     forecast_location = forecast_location,
