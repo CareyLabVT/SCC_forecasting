@@ -4,9 +4,9 @@ library(lubridate)
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
 library(glmtools)
 
-first_day <- '2018-08-29 00:00:00'
-sim_name <- NA
-hist_days <- 5
+first_day <- '2018-07-10 00:00:00'
+sim_name <- 'prediction'
+hist_days <- 30
 forecast_days <- 0
 restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -140,14 +140,14 @@ the_sals_init <- 0.5
 
 
 #Parameters
-#Kw <- 0.86
+Kw <- 0.86
 #coef_mix_conv <- 0.2
 #coef_wind_stir <- 0.23
 #coef_mix_shear <- 0.2
 #coef_mix_turb <- 0.51
 #coef_mix_KH <- 0.3
 #coef_mix_hyp <- 0.5
-#wind_factor <- 1
+wind_factor <- 0.5
 sw_factor <- 0.95
 lw_factor <- 0.95
 #at_factor <- 1
@@ -268,7 +268,7 @@ update_var(nlayers_init,'num_depths',workingGLM)
 update_var(the_temps_init,'the_temps',workingGLM)
 update_var(the_depths_init,'the_depths',workingGLM)
 
-#update_var(Kw,'Kw',workingGLM)
+update_var(Kw,'Kw',workingGLM)
 #update_var(coef_mix_conv,'coef_mix_conv',workingGLM)
 #update_var(coef_wind_stir,'coef_wind_stir',workingGLM)
 #update_var(coef_mix_shear,'coef_mix_shear',workingGLM)

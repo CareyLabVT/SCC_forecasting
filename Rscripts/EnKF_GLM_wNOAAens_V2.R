@@ -1,7 +1,7 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,Qt_file = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 30
+  nEnKFmembers <- 2
   nMETmembers <- 21
   nmembers = nEnKFmembers*nMETmembers
   
@@ -111,6 +111,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
   if(!is.na(restart_file)){
     tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
+    tmp <- file.copy(from = Qt_file, to = workingGLM,overwrite = TRUE)
   }
   
   ##CREATE INFLOW AND OUTFILE FILES
@@ -398,7 +399,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     }
   }
   
-  kw_init <- 0.60
+  kw_init <- 0.87
   x <- array(NA,dim=c(nsteps,nmembers,nstates))
   #Initial conditions
   if(!restart_present){
@@ -436,6 +437,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(restart_present){
     print('Using restart file')
     x_previous <- read.csv(restart_file)
+    Qt <- read.csv(Qt_file)
   }else{
     x_previous <- read.csv(paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
   }
@@ -555,10 +557,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #Matrix Corrupted state estimate [nmembers x nstates]
       if(i > spin_up_days+1){
         x_corr <- x_star + NQt
-      }else{}
+      }else{
+        
+      }
     }
     
-    if(i <= spin_up_days+1){
+    
+    if(i >= spin_up_days+1){
       #Obs for time step
       z_index <- which(!is.na(z[i,]))
       
@@ -570,7 +575,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         }
         
       }else{
-        
         #if observation then calucate Kalman adjustment
         zt <- z[i,z_index]
         z_states_t <- z_states[i,z_index]
@@ -628,10 +632,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         #Kalman gain
         Kt <- Pt %*% t(H) %*% solve(St)
         #Adaptive noise estimation
-        beta <- 0.55
+        b <- 0.55
         alpha <- 0.5
         I_mat <- diag(1,nstates)
-        Gammat = t((1 - beta)*solve((H %*% Pt %*% t(H)))%*%(H %*% Pt)%*%(I_mat - t(H) %*% H) + beta*H)
+        Gammat = t((1 - b)*solve((H %*% Pt %*% t(H)))%*%(H %*% Pt)%*%(I_mat - t(H) %*% H) + b*H)
         Qt_hat = Gammat %*% (St - H%*%Pt_star%*%t(H) - psi_t) %*% t(Gammat)
         Qt = alpha*Qt+ (1-alpha)*Qt_hat
         #Ensemble specific updated state
@@ -650,7 +654,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     
     if(i == (hist_days+1)){
       restart_file_name <- paste0('restart_',year(full_time[i]),'_',month(full_time[i]),'_',day(full_time[i]),'.csv')
+      Qt_file_name <- paste0('restart_',year(full_time[i]),'_',month(full_time[i]),'_',day(full_time[i]),'Qt.csv')
       write.csv(x[i,,],paste0(workingGLM,'/',restart_file_name),row.names = FALSE)
+      write.csv(Qt,paste0(workingGLM,'/',Qt_file_name),row.names = FALSE)
     }
 
   }
@@ -670,5 +676,5 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   ##ARCHIVE FORECAST
   archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location,push_to_git,save_file_name)
   
-  return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder))
+  return(list(restart_file_name <- restart_file_name ,sim_name <- sim_name, archive_folder<-archive_folder, Qt_file_name <- Qt_file_name))
 }
