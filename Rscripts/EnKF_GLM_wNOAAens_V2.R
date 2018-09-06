@@ -668,14 +668,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))    
   }
   ###SAVE FORECAST
-  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,Qt,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
+  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,Qt,num_pars,par1,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
   
   ### SUMMARIZE FORECAST
   
   #pending
   
   ##PLOT FORECAST
-  plot_forecast(workingGLM = workingGLM,sim_name = save_file_name)
+  plot_forecast(workingGLM = workingGLM,sim_name = save_file_name, num_pars = num_pars)
   
   ##ARCHIVE FORECAST
   archive_folder <- archive_forecast(workingGLM = workingGLM ,Folder = Folder, forecast_base_name = forecast_base_name, full_time = full_time,forecast_location = forecast_location,push_to_git,save_file_name)

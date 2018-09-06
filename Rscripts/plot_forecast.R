@@ -1,4 +1,4 @@
-plot_forecast <- function(workingGLM,sim_name){
+plot_forecast <- function(workingGLM,sim_name,num_pars){
   ###LOAD FORECAST FOR ANALYSIS
   load(file = paste0(workingGLM,'/',sim_name,'_output.Rdata'))
 
@@ -39,7 +39,7 @@ plot_forecast <- function(workingGLM,sim_name){
   
   ###PLOT OF PARAMETERS IF FIT
   if(num_pars > 0){
-    plot(rowMeans(x[,,par1]),xlim ='time step (day)',ylim = 'Kw parameter')
+    plot(rowMeans(x[,,par1]),xlab ='time step (day)',ylab = 'Kw parameter')
   }
   
   ###PLOT HISTOGRAMS OF FORECAST

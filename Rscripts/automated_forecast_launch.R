@@ -12,7 +12,7 @@ library(RCurl)
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 start_day <- '2018-07-15 00:00:00'
-forecast_start_day <- '2018-08-30 00:00:00' #'2018-09-03 00:00:00'
+forecast_start_day <- '2018-07-17 00:00:00' #'2018-08-30 00:00:00' #'2018-09-03 00:00:00'
 num_forecast_days <- NA  #Set to NA if 
 
 hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
