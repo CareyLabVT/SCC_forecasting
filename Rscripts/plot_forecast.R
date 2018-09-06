@@ -37,6 +37,11 @@ plot_forecast <- function(workingGLM,sim_name){
     #}
   }
   
+  ###PLOT OF PARAMETERS IF FIT
+  if(num_pars > 0){
+    plot(rowMeans(x[,,par1]),xlim ='time step (day)',ylim = 'Kw parameter')
+  }
+  
   ###PLOT HISTOGRAMS OF FORECAST
   par(mfrow=c(2,3))
   if(forecast_days > 6){
