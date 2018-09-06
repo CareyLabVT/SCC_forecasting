@@ -107,7 +107,7 @@
   zone_heights = 6, 9.5 !!!!4,9.5
   sed_heat_Ksoil = 1.8,1.8 !!!!0.25,0.9 !more organic, closer to 0.25, up to 2.9, default=1.2
   sed_temp_depth = 0.2,0.2
-  sed_temp_mean = 8,14!!!!14.6,8 !14.6,10.6
+  sed_temp_mean = 10,14!!!!14.6,8 !14.6,10.6
   sed_temp_amplitude = 4,10
   sed_temp_peak_doy = 275,275
 !  sed_reflectivity = 0.1,0.01

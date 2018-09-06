@@ -2,15 +2,17 @@ if (!"mvtnorm" %in% installed.packages()) install.packages("mvtnorm")
 if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4")
 if (!"lubridate" %in% installed.packages()) install.packages("lubridate")
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
+if (!"RCurl" %in% installed.packages()) install.packages('RCurl')
 library(mvtnorm)
 library(glmtools)
 library(ncdf4)
 library(lubridate)
+library(RCurl)
 
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 start_day <- '2018-07-15 00:00:00'
-forecast_start_day <- '2018-07-18 00:00:00' #'2018-09-03 00:00:00'
+forecast_start_day <- '2018-09-01 00:00:00' #'2018-09-03 00:00:00'
 num_forecast_days <- NA  #Set to NA if 
 
 hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
@@ -26,14 +28,15 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 #FIRST DAY
 out <- run_forecast(
   first_day = start_day,
-  sim_name = 'test_historical_varKw_0.87start', 
+  sim_name = NA, 
   hist_days = hist_days-1,
   forecast_days = 0,
   spin_up_days = 0,
   restart_file = NA,
   Folder = Folder,
   forecast_location = forecast_location,
-  push_to_git=push_to_git
+  push_to_git=push_to_git,
+  Qt_file = NA
 )
 
 
@@ -78,12 +81,14 @@ repeat {
     first_day= start_day,
     sim_name = NA, 
     hist_days = 1,
-    forecast_days = 15,
+    forecast_days = 5,
     spin_up_days = 0,
     restart_file = paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[1]),
     Folder = Folder,
     forecast_location = forecast_location,
-    push_to_git=push_to_git
+    push_to_git=push_to_git,
+    Qt_file <- paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[4])
+    
   )
   forecast_day_count <- forecast_day_count + 1
   
