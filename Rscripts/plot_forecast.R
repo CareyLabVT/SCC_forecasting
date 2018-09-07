@@ -1,9 +1,12 @@
-plot_forecast <- function(workingGLM,sim_name,num_pars){
+plot_forecast <- function(workingGLM,sim_name,num_pars,time_of_forecast){
   ###LOAD FORECAST FOR ANALYSIS
   load(file = paste0(workingGLM,'/',sim_name,'_output.Rdata'))
 
   ###PLOT FORECAST
-  pdf(paste0(workingGLM,'/',sim_name,'_forecast.pdf'))
+
+  time_of_forecast <- paste0(year(time_of_forecast),month(time_of_forecast),day(time_of_forecast),'_',hour(time_of_forecast),'_',(minute(time_of_forecast)))
+  pdf_name  <- paste0(sim_name,'_',time_of_forecast,'.pdf')
+  pdf(paste0(workingGLM,'/',pdf_name))
   par(mfrow=c(4,3))
   
   z = z_obs

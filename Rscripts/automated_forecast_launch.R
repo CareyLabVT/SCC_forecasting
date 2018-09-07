@@ -9,41 +9,50 @@ library(ncdf4)
 library(lubridate)
 library(RCurl)
 
+sim_name <- 'FCR'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 start_day <- '2018-07-15 00:00:00'
-forecast_start_day <- '2018-08-30 00:00:00' #'2018-09-03 00:00:00'
-num_forecast_days <- NA  #Set to NA if 
-
-hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
-
+forecast_start_day <- '2018-09-03 00:00:00'
+num_forecast_days <- NA  #Set to NA if running into future
+init_restart_file <- NA
+init_run <- FALSE
 wait_time <- 60*60*2.5
-
 push_to_git <- TRUE
+
+
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 
-#FIRST DAY
-out <- run_forecast(
-  first_day = start_day,
-  sim_name = NA, 
-  hist_days = hist_days-1,
-  forecast_days = 0,
-  spin_up_days = 0,
-  restart_file = NA,
-  Folder = Folder,
-  forecast_location = forecast_location,
-  push_to_git=push_to_git,
-  Qt_file = NA
-)
 
+if(!init_run){
+  hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
+  
+  #FIRST DAY
+  out <- run_forecast(
+    first_day = start_day,
+    sim_name = sim_name, 
+    hist_days = hist_days-1,
+    forecast_days = 0,
+    spin_up_days = 0,
+    restart_file = NA,
+    Folder = Folder,
+    forecast_location = forecast_location,
+    push_to_git=push_to_git
+  )
+  
+  #ADVANCE TO NEXT DAY
+  start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
+  restart_file <- unlist(out)[1]
+}else{
+  start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")
+  restart_file <- init_restart_file
+}
 
-#ADVANCE TO NEXT DAY
-start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
 forecast_day_count <- 1
 #ALL SUBSEQUENT DAYS
-repeat {
+repeat{
   
   startTime <- Sys.time()
   
@@ -78,18 +87,18 @@ repeat {
   
   out <- run_forecast(
     first_day= start_day,
-    sim_name = NA, 
+    sim_name = sim_name, 
     hist_days = 1,
-    forecast_days = 5,
+    forecast_days = 15,
     spin_up_days = 0,
-    restart_file = paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[1]),
+    restart_file = restart_file,
     Folder = Folder,
     forecast_location = forecast_location,
-    push_to_git=push_to_git,
-    Qt_file <- paste0(forecast_location,'/',unlist(out)[3],'/',unlist(out)[4])
-    
+    push_to_git=push_to_git
   )
   forecast_day_count <- forecast_day_count + 1
+  
+  restart_file <- unlist(out)[1]
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)

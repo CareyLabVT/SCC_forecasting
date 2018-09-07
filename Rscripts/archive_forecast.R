@@ -1,9 +1,9 @@
-archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,forecast_location,push_to_git,save_file_name){
+archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,forecast_location,push_to_git,save_file_name,time_of_forecast){
   ###ARCHIVE AND CLEAN UP FORECAST
   unlink(paste0(workingGLM,'/','FCRmet.csv'),recursive = FALSE)
   unlink(paste0(workingGLM,'/','Catwalk.csv'),recursive = FALSE)
   unlink(paste0(workingGLM,'/',forecast_base_name,'.csv'),recursive = FALSE)
-  time_of_forecast <- paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
+  time_of_forecast <- paste0(year(time_of_forecast),month(time_of_forecast),day(time_of_forecast),'_',hour(time_of_forecast),'_',(minute(time_of_forecast)))
   forecast_archive_dir_name <- paste0(save_file_name,'_',time_of_forecast)
   #forecast_archive_dir_name <- paste0(sim_name,forecast_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_',time_of_forecast)
   
@@ -15,15 +15,21 @@ archive_forecast <- function(workingGLM,Folder,forecast_base_name,full_time,fore
     forecast_archive_dir <- paste0(forecast_location,'/',forecast_archive_dir_name)
   }
   
-  dir.create(forecast_archive_dir)
-  files <- list.files(paste0(workingGLM))
-  tmp <- file.copy(files, forecast_archive_dir)
+  file.rename(from = paste0(workingGLM,'/',save_file_name,'.nc'), to = paste0(workingGLM,'/',forecast_archive_dir_name,'.nc'))
+  
+  #dir.create(forecast_archive_dir)
+  files <- list.files(paste0(workingGLM),full.names = TRUE)
+  files_pdf <- list.files(paste0(workingGLM),pattern = '.pdf', full.names = TRUE)
+  files_nc <- list.files(paste0(workingGLM),pattern = paste0(forecast_archive_dir_name,'.nc'), full.names = TRUE)
+  tmp <- file.copy(from = files_pdf, to = forecast_location)
+  tmp <- file.copy(from = files_nc, to = forecast_location)
   zip(zipfile = forecast_archive_dir,files = files)
+  netcdf_name <- paste0(forecast_archive_dir_name,'.nc')
   if(push_to_git){
     setwd(forecast_location)
-    system(paste0('git add ',forecast_archive_dir_name,'.zip'))
+    system(paste0('git add ',netcdf_name))
     system('git commit -m "forecast"')
     system('git push')
   }
-  return(list(forecast_archive_dir_name))
+  return(list(paste0(forecast_location,'/',netcdf_name)))
 }
