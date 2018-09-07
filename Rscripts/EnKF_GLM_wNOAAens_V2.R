@@ -1,4 +1,4 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
   
   ###RUN OPTIONS
   nEnKFmembers <- 50
@@ -94,16 +94,27 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
-  download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
-  download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
-  download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
+  mia_location <- paste0(data_location,'/','mia-data')
+  setwd(mia_location)
+  system(paste0('git pull'))
+  carina_location <- paste0(data_location,'/','carina-data')
+  setwd(carina_location)
+  system(paste0('git pull'))
+  noaa_location <- paste0(data_location,'/','noaa-data')
+  setwd(noaa_location)
+  system(paste0('git pull'))
+
+  #download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
+  #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+  #download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
+  met_obs_fname <- paste0(carina_location,'/FCRmet.csv')
   ###CREATE HISTORICAL MET FILE
   obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
   
   ###CREATE FUTURE MET FILES
-  in_directory <- workingGLM
+  in_directory <- paste0(noaa_location)
   out_directory <- workingGLM
   file_name <- forecast_base_name
   process_GEFS2GLM(in_directory,out_directory,file_name)
@@ -170,6 +181,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   PHY_CHLOROPCH3_init <-2.0
   PHY_DIATOMPCH4_init <- 2.0
   
+  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
   #PROCESS TEMPERATURE OBSERVATIONS
   obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
   for(i in 1:length(obs_temp$obs[,1])){
@@ -618,7 +630,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))    
   }
   ###SAVE FORECAST
-  save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,Qt,num_pars,par1,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
+  #save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,Qt,num_pars,par1,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
   
   ### SUMMARIZE FORECAST
   time_of_forecast <- Sys.time() #paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
@@ -633,8 +645,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
                         time_of_forecast = time_of_forecast)
   
   ##PLOT FORECAST
-  plot_forecast(workingGLM = workingGLM,sim_name = save_file_name, num_pars = num_pars, time_of_forecast= time_of_forecast)
-  
+  #plot_forecast(workingGLM = workingGLM,sim_name = save_file_name, num_pars = num_pars, time_of_forecast= time_of_forecast)
+  #plot_forecast_netcdf(pdf_file_name,
+  #output_file <- 
+  #catwalk_fname <- catwalk_fname
+  #include_wq = include_wq
+  #code_location = paste0(Folder,'/','Rscripts'))
+    
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
                                      Folder = Folder, 
