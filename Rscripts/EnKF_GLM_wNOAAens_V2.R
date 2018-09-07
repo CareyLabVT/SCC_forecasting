@@ -76,7 +76,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   source(paste0(Folder,'/','Rscripts/process_GEFS2GLM_v2.R'))
   source(paste0(Folder,'/','Rscripts/extract_temp_CTD.R'))
   source(paste0(Folder,'/','Rscripts/create_inflow_outflow_file.R'))
-  source(paste0(Folder,'/','Rscripts/plot_forecast.R'))
+  source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
   source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   source(paste0(Folder,'/','Rscripts/write_forecast_netcdf.R')) 
   ###SHARED GLM LIBRARIES
@@ -634,6 +634,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ### SUMMARIZE FORECAST
   time_of_forecast <- Sys.time() #paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
+  time_of_forecast_string <- paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
   
   write_forecast_netcdf(x =x ,
                         full_time = full_time,
@@ -646,11 +647,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ##PLOT FORECAST
   #plot_forecast(workingGLM = workingGLM,sim_name = save_file_name, num_pars = num_pars, time_of_forecast= time_of_forecast)
-  #plot_forecast_netcdf(pdf_file_name,
-  #output_file <- 
-  #catwalk_fname <- catwalk_fname
-  #include_wq = include_wq
-  #code_location = paste0(Folder,'/','Rscripts'))
+  # plot_forecast_netcdf(paste0(workingGLM,'/',save_file_name,'_',time_of_forecast_string,'.pdf'),
+  #   output_file = paste0(save_file_name,'.nc'),
+  #   catwalk_fname = catwalk_fname,
+  #   include_wq = include_wq,
+  #   code_location = paste0(Folder,'/','Rscripts'))
     
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
