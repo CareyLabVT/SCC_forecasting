@@ -6,7 +6,7 @@ library(glmtools)
 
 first_day <- '2018-07-10 00:00:00'
 sim_name <- 'prediction'
-hist_days <- 30
+hist_days <- 60
 forecast_days <- 0
 restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -360,6 +360,10 @@ ndays = 0
 update_var(obs_met_outfile,'meteo_fl',workingGLM)
 update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
 update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+
+model_obs_array[1,1,] = x[1,]
+model_obs_array[2,1,obs_index] = z[1,]
+model_obs_array[3,1,] = 0
 for(i in 2:nsteps){
   
   #1) Update GLM NML files to match the current day of the simulation
@@ -403,8 +407,7 @@ for(i in 2:nsteps){
     x_star[temp_start:temp_end] <- GLMtemps 
     surface_height[i] <- GLM_temp_wq_out$surface_height 
   }
-  print(x[i-1,temp_start:temp_end])
-  print(GLMtemps)
+
   
   
   
@@ -426,12 +429,12 @@ for(i in 2:nsteps){
     zt = z[i,z_index]
     z_states_t = z_states[i,z_index]
     temp1 = zt
-    model = x_star[obs_index]
+    model = x_star[z_states_t]
     obs = zt
     
     model_obs_array[1,i,] = x_star
     print(x_star)
-    model_obs_array[2,i,obs_index] = z[i,z_index]
+    model_obs_array[2,i,z_states_t] = z[i,z_index]
     model_obs_array[3,i,] = ndays
     
     if(UPDATE_STATES_W_OBS & !include_wq){
@@ -452,10 +455,10 @@ points(model_obs_array[2,,1],col='red')
 plot(model_obs_array[1,,1])
 points(model_obs_array[2,,1],col='red')
 
-i = 2
+i = 1
 z_index = 1
-plot(model_obs_array[1,,z_states[i,z_index]],type = 'o',ylim=c(5,35))
-points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')
+plot(model_obs_array[1,,z_states[1,z_index]],type = 'o',ylim=c(5,35))
+points(model_obs_array[2,,z_states[1,z_index]],col='red',type = 'o')
 for(z_index in 1:10){
 points(model_obs_array[1,,z_states[i,z_index]],col='black',type = 'o')
 points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')

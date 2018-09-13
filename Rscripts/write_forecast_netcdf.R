@@ -4,7 +4,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   #Set dimensions
   ens <- seq(1,dim(x)[2],1)
   depth <- the_depths_init
-  t <- as.numeric(as.POSIXct(full_time))
+  t <- as.numeric(as.POSIXlt(full_time,formaat = "%Y-%m-%d %H:%M:%S",tz="America/New_York"))
   states <- seq(1,dim(x)[3],1)
   
   #Set variable that states whether value is forecasted
@@ -43,8 +43,12 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   dlname <- 'temperature_lowerCI'
   tmp_lower_def <- ncvar_def("temp_lowerCI","deg_C",list(timedim,depthdim),fillvalue,dlname,prec="single")
   
+  dlname <- 'zone 1 temperature'
+  par1_def <- ncvar_def("zone1temp","deg_C",list(timedim,ensdim),fillvalue,dlname,prec="single")
+  dlname <- 'zone 2 temperature'
+  par2_def <- ncvar_def("zone2temp","deg_C",list(timedim,ensdim),fillvalue,dlname,prec="single")
   dlname <- 'Kw'
-  kw_def <- ncvar_def("Kw","unitless",list(timedim,ensdim),fillvalue,dlname,prec="single")
+  par3_def <- ncvar_def("Kw","unitless",list(timedim,ensdim),fillvalue,dlname,prec="single")
   
   dlname <- 'covariance matrix'
   Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,longname = 'restart covariance matrix',prec="float")
@@ -56,7 +60,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   forecast_def <- ncvar_def("forecasted","-",list(timedim),fillvalue,longname = dlname,prec="integer")
   
   # create netCDF file and put arrays
-  ncout <- nc_create(ncfname,list(tmp_def,kw_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def),force_v4=T)
+  ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def),force_v4=T)
   ncvar_put(ncout,tmp_mean_def,mean_temp)
 
   ncvar_put(ncout,tmp_upper_def,upper95_temp)
@@ -65,7 +69,11 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
 
   ncvar_put(ncout,tmp_def,x[,,1:29])
 
-  ncvar_put(ncout,kw_def,array(x[,,30]))
+  ncvar_put(ncout,par1_def,array(x[,,30]))
+  
+  ncvar_put(ncout,par2_def,array(x[,,31]))
+  
+  ncvar_put(ncout,par3_def,array(x[,,32]))
 
   ncvar_put(ncout,forecast_def,as.array(forecasted))
 

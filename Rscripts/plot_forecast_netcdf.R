@@ -1,30 +1,35 @@
-plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location){
-  
-  code_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Rscripts'
+plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries){
+  library(ncdf4)
+  #code_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Rscripts'
   source(paste0(code_location,'/extract_temp_chain.R'))
   
-  output_file <-'/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_forecast/FCR_hist_2018_7_15_201897_15_32.nc'
-  include_wq <- FALSE
-  data_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data'
+  
+  #output_file <-'/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_forecast/FCR_hist_2018_9_7_forecast_2018_9_8_201898_9_59.nc'
+  #include_wq <- FALSE
+  #data_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data'
   mia_location <- paste0(data_location,'/','mia-data')
   setwd(mia_location)
   system(paste0('git pull'))
 
   catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
   
-  plot_summaries <- TRUE
+  #plot_summaries <- FALSE
   
   nc <- nc_open(output_file)
   
   t <- ncvar_get(nc,'time')
+  
+  
   full_time <- as.POSIXct(t, origin = '1970-01-01 00:00.00 UTC')
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   temp_mean <- ncvar_get(nc,'temp_mean')
   temp <- ncvar_get(nc,'temp')
-    temp_upper <- ncvar_get(nc,'temp_upperCI')
-    temp_lower  <- ncvar_get(nc,'temp_lowerCI')
-    depths <- ncvar_get(nc,'z')
+  temp_upper <- ncvar_get(nc,'temp_upperCI')
+  temp_lower  <- ncvar_get(nc,'temp_lowerCI')
+  depths <- ncvar_get(nc,'z')
   Kw <- ncvar_get(nc,'Kw')
+  zone1temp <- ncvar_get(nc,'zone1temp')
+  zone2temp <- ncvar_get(nc,'zone2temp')
   forecasted <- ncvar_get(nc,'forecasted')
   
   nsteps <- length(full_time)
@@ -78,9 +83,11 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   #Matrix for knowing which state the observation corresponds to
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
+  #print(full_time_day)
+  #print(z[1,])
   nMETmembers =21
-  pdf(paste0(workingGLM,'/',pdf_file_name))
-  par(mfrow=c(4,3))
+  pdf(paste0(save_location,'/',pdf_file_name),width = 12, height = 5)
+  par(mfrow=c(2,3))
   
   for(i in 1:nlayers){
     model = i
@@ -90,15 +97,15 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
       obs = NA
     }
     
-    ylim = range(c(temp_mean,temp_lower,temp_upper,c(z[,])),na.rm = TRUE)
+    ylim = range(c(temp_mean[,model],temp_upper[,model],temp_lower[,model],c(z[,obs])),na.rm = TRUE)
     if(plot_summaries){
       plot(as.POSIXct(full_time_day),temp_mean[,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
       points(as.POSIXct(full_time_day),temp_upper[,model],type='l',lty='dashed')
       points(as.POSIXct(full_time_day),temp_lower[,model],type='l',lty='dashed')
     }else{
       plot(as.POSIXct(full_time_day),temp[,1,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
-      if(nmembers > 1){
-        for(m in 2:nmembers){
+      if(length(temp[1,,model]) > 1){
+        for(m in 2:length(temp[1,,model])){
           points(as.POSIXct(full_time_day),temp[,m,model],type='l')
         }
       }
@@ -115,6 +122,8 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   
   ###PLOT OF PARAMETERS IF FIT
   plot(rowMeans(Kw[,]),xlab ='time step (day)',ylab = 'Kw parameter')
+  plot(rowMeans(zone1temp[,]),xlab ='time step (day)',ylab = 'Zone 1 sediment temp')
+  plot(rowMeans(zone2temp[,]),xlab ='time step (day)',ylab = 'Zone 2 sediment temp')
   
   
   ###PLOT HISTOGRAMS OF FORECAST
@@ -143,5 +152,6 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     abline(v= z[forecast_index+14,10],col='red')
   }
   }
+  dev.off()
 }
 

@@ -1,9 +1,9 @@
 run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 50
+  nEnKFmembers <- 10
   include_wq <- FALSE
-  num_pars <- 1
+  num_pars <- 3
   USE_OBS_CONTRAINT <- TRUE
   USE_QT_MATRIX <- TRUE
   NO_UNCERT <- FALSE
@@ -14,12 +14,18 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   lw_factor <- 0.95
   lake_depth_init <- 9.4  #not a modeled state
   kw_init <- 0.87
-  kw_init_Qt <- 0.005
+  kw_init_Qt <- 0.00000001
+  zone2_temp <- 17
+  zone1_temp <- 11
+  zone1temp_init_Qt <- 0.0001
+  zone2temp_init_Qt <- 0.0001
   
   #ERROR TERMS
-  obs_error <- 0.001 #NEED TO FIX
+  obs_error <- 0.0001 #NEED TO FIX
   thermo_depth_error <- 0.15
   temp_error <- 0.5
+  b <- 0.5  #0 = error is distributed to observed states, 1 = error is distributed to unobserved states
+  alpha <- 0.5
   
   ####################################################
   #### YOU WON'T NEED MODIFY ANYTHING BELOW HERE #####
@@ -219,8 +225,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   temp_end <- length(the_depths_init)
   if(num_pars > 0){
     par1 <- temp_end + 1
+    par2 <- par1 + 1
+    par3 <-  par2 + 1
   }else{
     par1 <- temp_end
+    par2 <- temp_end
+    par3 <- temp_end
   }
   wq_start <- rep(NA,num_wq_vars)
   wq_end <- rep(NA,num_wq_vars)
@@ -340,10 +350,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
   #Process error 
-  
-  thermo_depth_error <- 0.15
-  temp_error <- 0.5
-  
+
   if(USE_QT_MATRIX){
     Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
   }
@@ -351,6 +358,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(num_pars >0){
     Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
     Qt <- cbind(Qt,rep(0.0,nrow(Qt)))  
+    Qt[ncol(Qt),nrow(Qt)] <- zone1temp_init_Qt
+    Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
+    Qt <- cbind(Qt,rep(0.0,nrow(Qt))) 
+    Qt[ncol(Qt),nrow(Qt)] <- zone2temp_init_Qt
+    Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
+    Qt <- cbind(Qt,rep(0.0,nrow(Qt))) 
     Qt[ncol(Qt),nrow(Qt)] <- kw_init_Qt
   }
   
@@ -379,7 +392,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     }else{
       if(USE_QT_MATRIX){
         if(num_pars){
-          x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,kw_init), sigma=as.matrix(Qt))
+          x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
         }else{
           x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt))
           #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
@@ -390,6 +403,16 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
           corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
           corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
           x[1,m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
+        }
+      }
+    }
+    if(NO_UNCERT){
+      for(m in 1:nmembers){
+        if(num_pars){
+          x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
+        }else{
+          x[1,m,] <- c(the_temps_init)
+          #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
         }
       }
     }
@@ -450,7 +473,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
       if(num_pars > 0){
-        update_var(x[i-1,m,par1],'Kw',workingGLM)
+        #update_var(x[i-1,m,par1],'Kw',workingGLM)
+        update_var(c(x[i-1,m,par1],x[i-1,m,par2]),'sed_temp_mean',workingGLM)
+        update_var(x[i-1,m,par3],'Kw',workingGLM)
       }
       #update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
       #update_var(parameter_matrix[m,2],'wind_factor',workingGLM)
@@ -481,11 +506,15 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
         x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
         x_star[m,par1] <- x[i-1,m,par1]
+        x_star[m,par2] <- x[i-1,m,par2]
+        x_star[m,par3] <- x[i-1,m,par3]
         surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       }else{
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
         x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
         x_star[m,par1] <- x[i-1,m,par1]
+        x_star[m,par2] <- x[i-1,m,par2]
+        x_star[m,par3] <- x[i-1,m,par3]
         surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       }
       
@@ -508,18 +537,18 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     #Corruption [nmembers x nstates] 
     if(USE_QT_MATRIX){
       NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
-      zero_par1 <- which(x_star[,par1] + NQt[,par1] <= 0.0)
-      if(length(zero_par1) > 0.0){
-        for(kk in 1:length(zero_par1)){
+      zero_par3 <- which(x_star[,par3] + NQt[,par3] <= 0.0)
+      if(length(zero_par3) > 0.0){
+        for(kk in 1:length(zero_par3)){
           pass <- FALSE
           while(!pass){
             NQt[kk,] <- rmvnorm(n=1, sigma=as.matrix(Qt))
-            if(NQt[kk,par1] > 0.0){pass <- TRUE}
+            if(NQt[kk,par3] > 0.0){pass <- TRUE}
           }
         }
       }
       #Matrix Corrupted state estimate [nmembers x nstates]
-      if(i > spin_up_days+1){
+      if(i >= spin_up_days+1){
         x_corr <- x_star + NQt
       }else{
         
@@ -542,8 +571,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         #if observation then calucate Kalman adjustment
         zt <- z[i,z_index]
         z_states_t <- z_states[i,z_index]
-        yit <- array(NA,dim=c(nmembers,length(zt)))
-        
+
         #Assign which states have obs in the time step
         H <- array(0,dim=c(length(zt),nstates))
         for(j in 1:length(z_index)){
@@ -560,55 +588,36 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         
         #Ensemble mean
         ens_mean <- apply(x_corr, 2, mean)
-        ens_mean_star = apply(x_star, 2, mean) #Adaptive noise estimation
+        #ens_mean_star = apply(x_star, 2, mean) #Adaptive noise estimation
+        
+        N_psi = t(rmvnorm(n=1,mean = zt, sigma=as.matrix(psi_t)))
+        D_mat <- t(matrix(rep(N_psi,each=nmembers), nrow = nmembers, ncol=length(N_psi)))
         
         #Loop through ensemble members
         for(m in 1:nmembers){  
-          
-          #Ensemble specific deviation
-          dit[m,] <- x_corr[m,]-ens_mean
-          dit_star[m,] <- x_star[m,] - ens_mean_star #Adaptive noise estimation
-          
-          #Observational uncertainity
-          N_psi = rmvnorm(n=1,sigma=as.matrix(psi_t))
-          
-          #Ensemble specific innovations
-          yit[m,] <- zt - H %*% x_corr[m,] + t(N_psi) 
-          
-          #Ensemble specific estimate and innovation covariance
+        #  
+        #  #Ensemble specific deviation
+         dit[m,] <- x_corr[m,]-ens_mean
+         #dit_star[m,] <- x_star[m,] - ens_mean_star #Adaptive noise estimation
+
+        #  #Ensemble specific estimate and innovation covariance
           if(m == 1){
             Pit <- dit[m,] %*% t(dit[m,]) 
-            Pit_star <- dit_star[m,] %*% t(dit_star[m,]) 
-            Sit <- yit[m,] %*% t(yit[m,])
+        #    Pit_star <- dit_star[m,] %*% t(dit_star[m,]) 
           }else{
             Pit <- dit[m,] %*% t(dit[m,]) +  Pit 
-            Pit_star <- dit_star[m,] %*% t(dit_star[m,]) +  Pit_star 
-            Sit <- yit[m,] %*% t(yit[m,]) +  Sit 
+       #     Pit_star <- dit_star[m,] %*% t(dit_star[m,]) +  Pit_star 
           }
         }
         
         #estimate covariance
         Pt <- Pit/nmembers
-        Pt_star = Pit_star/nmembers  #Adaptive noise estimation
-        #Innovations covariance
-        St <- Sit/nmembers
-        
+      
         #Kalman gain
-        Kt <- Pt %*% t(H) %*% solve(St)
-        #Adaptive noise estimation
-        b <- 0.55
-        alpha <- 0.5
-        I_mat <- diag(1,nstates)
-        Gammat = t((1 - b)*solve((H %*% Pt %*% t(H)))%*%(H %*% Pt)%*%(I_mat - t(H) %*% H) + b*H)
-        Qt_hat = Gammat %*% (St - H%*%Pt_star%*%t(H) - psi_t) %*% t(Gammat)
-        Qt = alpha*Qt+ (1-alpha)*Qt_hat
-        #Ensemble specific updated state
-        for(m in 1:nmembers){
-          x[i,m,] <- x_corr[m,] + Kt %*% yit[m,]
-          if(NO_UNCERT){
-            x[i,m,] <- x_star[m,]
-          }
-        }
+        Kt <- Pt %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
+        
+        #Update states array (transposes are necessary to convert between the dims here and the dims in the EnKF formulations)
+        x[i,,] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
         
         if(length(which(is.na(x[i,,]))) > 0){dies = i}
       }
@@ -629,13 +638,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }else{
     save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))    
   }
-  ###SAVE FORECAST
-  #save(x,full_time,z_obs,met_file_names,the_depths_init,forecast_days,hist_days,nlayers_init,full_time_day, obs_index,Qt,num_pars,par1,file = paste0(workingGLM,'/',save_file_name,'_output.Rdata'))
-  
+
   ### SUMMARIZE FORECAST
   time_of_forecast <- Sys.time() #paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
   time_of_forecast_string <- paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
   
+  ###SAVE FORECAST
   write_forecast_netcdf(x =x ,
                         full_time = full_time,
                         Qt = Qt,
@@ -645,14 +653,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
                         Qt_restart = Qt_restart,
                         time_of_forecast = time_of_forecast)
   
-  ##PLOT FORECAST
-  #plot_forecast(workingGLM = workingGLM,sim_name = save_file_name, num_pars = num_pars, time_of_forecast= time_of_forecast)
-  # plot_forecast_netcdf(paste0(workingGLM,'/',save_file_name,'_',time_of_forecast_string,'.pdf'),
-  #   output_file = paste0(save_file_name,'.nc'),
-  #   catwalk_fname = catwalk_fname,
-  #   include_wq = include_wq,
-  #   code_location = paste0(Folder,'/','Rscripts'))
-    
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
                                      Folder = Folder, 

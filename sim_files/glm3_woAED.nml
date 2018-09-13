@@ -16,11 +16,11 @@
 /
 &mixing
    coef_mix_conv = 0.2
-   coef_wind_stir = 0.21 !0.1
-   coef_mix_shear = 0.21! 0.18
-   coef_mix_turb = 0.53 !0.51, 0.4
-   coef_mix_KH = 0.28! 0.2
-   coef_mix_hyp = 0.51! 0.4
+   coef_wind_stir = 0.23 ! 0.21
+   coef_mix_shear = 0.3! 0.21
+   coef_mix_turb = 0.51 ! 0.53
+   coef_mix_KH = 0.30 !0.28! 
+   coef_mix_hyp = 0.50 !0.51! 
    deep_mixing =.true.
 /
 &morphometry
@@ -79,7 +79,7 @@
    num_inflows = 1
    names_of_strms = 'river'
    subm_flag = .false.
-   strm_hf_angle = 55
+   strm_hf_angle = 55 !55
    strmbd_slope = 0.05
    strmbd_drag = 0.03
    inflow_factor = 1
@@ -104,12 +104,12 @@
 &sediment
   benthic_mode = 2
   n_zones = 2
-  zone_heights = 6, 9.5 !!!!4,9.5
-  sed_heat_Ksoil = 1.8,1.8 !!!!0.25,0.9 !more organic, closer to 0.25, up to 2.9, default=1.2
-  sed_temp_depth = 0.2,0.2
-  sed_temp_mean = 10,14!!!!14.6,8 !14.6,10.6
-  sed_temp_amplitude = 4,10
-  sed_temp_peak_doy = 275,275
-!  sed_reflectivity = 0.1,0.01
+  zone_heights =  6, 9.5 !!!!4,9.5
+  sed_heat_Ksoil = 1.8, 1.8, !!!!0.25,0.9 !more organic, closer to 0.25, up to 2.9, default=1.2
+  sed_temp_depth = 0.2, 0.2
+  sed_temp_mean = 11, 17!!!!14.6,8 !14.6,10.6
+  sed_temp_amplitude = 0, 0, 
+  sed_temp_peak_doy = 275, 275
+!  sed_reflectivity = 0.1,0.01, 0.01
 !  sed_roughness = 0.1,0.01
 /
