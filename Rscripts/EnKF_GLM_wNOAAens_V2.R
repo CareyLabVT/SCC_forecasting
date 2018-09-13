@@ -1,11 +1,13 @@
 run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 10
+  nEnKFmembers <- 50
   include_wq <- FALSE
   num_pars <- 3
-  USE_OBS_CONTRAINT <- TRUE
+  
   USE_QT_MATRIX <- TRUE
+  
+  USE_OBS_CONTRAINT <- TRUE
   NO_UNCERT <- FALSE
   
   
@@ -444,7 +446,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
   #parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   
-  
   #Matrix to store ensemble specific deviations and innovations
   dit <- array(NA,dim=c(nmembers,nstates))
   dit_star = array(NA,dim=c(nmembers,nstates)) #Adaptive noise estimation
@@ -469,18 +470,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     x_corr <- array(NA, dim = c(nmembers,nstates))
     for(m in 1:nmembers){
       
-      #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
       tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
       if(num_pars > 0){
-        #update_var(x[i-1,m,par1],'Kw',workingGLM)
         update_var(c(x[i-1,m,par1],x[i-1,m,par2]),'sed_temp_mean',workingGLM)
         update_var(x[i-1,m,par3],'Kw',workingGLM)
       }
-      #update_var(parameter_matrix[m,1],'sw_factor',workingGLM)
-      #update_var(parameter_matrix[m,2],'wind_factor',workingGLM)
-      #update_var(parameter_matrix[m,3],'cd',workingGLM)
-      
+
       if(include_wq){
         wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
         update_var(wq_init_vals,'wq_init_vals',workingGLM)
@@ -505,18 +501,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       if(include_wq){
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
         x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
-        x_star[m,par1] <- x[i-1,m,par1]
-        x_star[m,par2] <- x[i-1,m,par2]
-        x_star[m,par3] <- x[i-1,m,par3]
-        surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       }else{
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
         x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
-        x_star[m,par1] <- x[i-1,m,par1]
-        x_star[m,par2] <- x[i-1,m,par2]
-        x_star[m,par3] <- x[i-1,m,par3]
-        surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       }
+      x_star[m,par1] <- x[i-1,m,par1]
+      x_star[m,par2] <- x[i-1,m,par2]
+      x_star[m,par3] <- x[i-1,m,par3]
+      surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       
       #INCREMENT THE MET_INDEX TO MOVE TO THE NEXT NOAA ENSEMBLE
       met_index = met_index + 1
@@ -547,12 +539,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
           }
         }
       }
-      #Matrix Corrupted state estimate [nmembers x nstates]
-      if(i >= spin_up_days+1){
-        x_corr <- x_star + NQt
-      }else{
-        
-      }
+      x_corr <- x_star + NQt
     }
     
     
