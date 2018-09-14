@@ -1,5 +1,6 @@
 plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries){
   library(ncdf4)
+  library(lubridate)
   #code_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Rscripts'
   source(paste0(code_location,'/extract_temp_chain.R'))
   
@@ -20,7 +21,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   t <- ncvar_get(nc,'time')
   
   
-  full_time <- as.POSIXct(t, origin = '1970-01-01 00:00.00 UTC')
+  full_time <- as.POSIXct(t, origin = '1970-01-01 00:00.00 UTC', tz = 'EST5EDT')
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   temp_mean <- ncvar_get(nc,'temp_mean')
   temp <- ncvar_get(nc,'temp')
@@ -96,8 +97,8 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     }else{
       obs = NA
     }
-    
-    ylim = range(c(temp_mean[,model],temp_upper[,model],temp_lower[,model],c(z[,obs])),na.rm = TRUE)
+    ylim = range(c(temp_mean[,],temp_upper[,],temp_lower[,],c(z[,])),na.rm = TRUE) 
+    #ylim = range(c(temp_mean[,model],temp_upper[,model],temp_lower[,model],c(z[,obs])),na.rm = TRUE)
     if(plot_summaries){
       plot(as.POSIXct(full_time_day),temp_mean[,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
       points(as.POSIXct(full_time_day),temp_upper[,model],type='l',lty='dashed')
@@ -152,6 +153,14 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     abline(v= z[forecast_index+14,10],col='red')
   }
   }
+  
+  par(mfrow=c(3,5))
+  for(i in 3:17){
+  xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
+  prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+  plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
+  }
+  
   dev.off()
 }
 

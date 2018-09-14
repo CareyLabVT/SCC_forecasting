@@ -14,19 +14,16 @@ Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
 start_day <- '2018-07-10 00:00:00'
-forecast_start_day <- '2018-09-01 00:00:00'
+forecast_start_day <- '2018-09-12 00:00:00'
 spin_up_days <- 5
 num_forecast_days <- NA  #Set to NA if running into future
 init_restart_file <- NA
 init_run <- FALSE
 wait_time <- 60*60*2.5
-push_to_git <- FALSE
-
-
+push_to_git <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
-
 
 if(!init_run){
   hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
