@@ -1,4 +1,4 @@
-write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days){
+write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior){
   
   ncfname <- paste0(save_file_name,'.nc')
   #Set dimensions
@@ -49,13 +49,15 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,dlname,prec="float")
   dlname <- 'matrix for restarting EnKF'
   x_def <- ncvar_def("x_restart","-",list(ensdim,statedim),fillvalue,dlname,prec="float")
+  dlname <- 'Predicted states prior to Kalman correction'
+  x_prior_def <- ncvar_def("x_prior","-",list(timedim,ensdim,depthdim),fillvalue,dlname,prec="float")
   
   fillvalue <- -99
   dlname <- '0 = historical; 1 = forecasted'
   forecast_def <- ncvar_def("forecasted","-",list(timedim),fillvalue,longname = dlname,prec="integer")
   
   # create netCDF file and put arrays
-  ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def),force_v4=T)
+  ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def),force_v4=T)
   ncvar_put(ncout,tmp_mean_def,mean_temp)
 
   ncvar_put(ncout,tmp_upper_def,upper95_temp)
@@ -73,6 +75,8 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   ncvar_put(ncout,forecast_def,as.array(forecasted))
 
   ncvar_put(ncout,x_def,as.matrix(x_restart))
+  
+  ncvar_put(ncout,x_prior_def,as.matrix(x_prior))
 
   ncvar_put(ncout,Qt_restart_def,as.matrix(Qt_restart))
 

@@ -165,12 +165,12 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     }
   }
   
-  par(mfrow=c(3,5))
-  for(i in 3:17){
-    xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
-    prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
-    plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
-  }
+  #par(mfrow=c(3,5))
+  #for(i in 3:17){
+  #  xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
+  #  prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+  #  plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
+  #}
   
   dev.off()
 }

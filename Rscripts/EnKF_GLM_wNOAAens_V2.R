@@ -1,13 +1,13 @@
 run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 1
+  nEnKFmembers <- 50
   include_wq <- FALSE
   num_pars <- 3
   
   USE_QT_MATRIX <- TRUE
-  USE_CTD <- TRUE
-  PRE_SCC <- TRUE
+  USE_CTD <- FALSE
+  PRE_SCC <- FALSE
   
   USE_OBS_CONTRAINT <- TRUE
   NO_UNCERT <- FALSE
@@ -683,7 +683,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
                         x_restart=x_restart,
                         Qt_restart = Qt_restart,
                         time_of_forecast = time_of_forecast,
-                        hist_days = hist_days)
+                        hist_days = hist_days,
+                        x_prior)
   
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,

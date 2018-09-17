@@ -9,16 +9,16 @@ library(ncdf4)
 library(lubridate)
 library(RCurl)
 
-sim_name <- 'FCR_betaV2_long'
+sim_name <- 'FCR_betaV2'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2014-05-05 00:00:00' #'2018-07-10 00:00:00'
-forecast_start_day <- '2017-12-31 00:00:00'#'2018-09-12 00:00:00'
+start_day <- '2018-09-17 00:00:00'
+forecast_start_day <- '2017-12-31 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
-init_restart_file <- NA
-init_run <- FALSE
+init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_16_forecast_2018_9_17_2018917_8_56.nc'
+init_run <- TRUE
 wait_time <- 60*60*2.5
 push_to_git <- FALSE
 
