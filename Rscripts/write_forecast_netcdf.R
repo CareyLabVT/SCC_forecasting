@@ -1,10 +1,10 @@
-write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast){
+write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days){
   
   ncfname <- paste0(save_file_name,'.nc')
   #Set dimensions
   ens <- seq(1,dim(x)[2],1)
   depth <- the_depths_init
-  t <- as.numeric(as.POSIXlt(full_time,formaat = "%Y-%m-%d %H:%M:%S",tz="America/New_York"))
+  t <- as.numeric(as.POSIXct(full_time),tz="EST5EDT",origin = '1970-01-01 00:00.00 UTC')
   states <- seq(1,dim(x)[3],1)
   
   #Set variable that states whether value is forecasted
@@ -33,27 +33,22 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   fillvalue <- 1e32
   dlname <- 'temperature'
   tmp_def <- ncvar_def("temp","deg_C",list(timedim,ensdim,depthdim),fillvalue,dlname,prec="single")
-  
   dlname <- 'temperature_mean'
   tmp_mean_def <- ncvar_def("temp_mean","deg_C",list(timedim,depthdim),fillvalue,dlname,prec="single")
-  
   dlname <- 'temperature_upperCI'
   tmp_upper_def <- ncvar_def("temp_upperCI","deg_C",list(timedim,depthdim),fillvalue,dlname,prec="single")
-  
   dlname <- 'temperature_lowerCI'
   tmp_lower_def <- ncvar_def("temp_lowerCI","deg_C",list(timedim,depthdim),fillvalue,dlname,prec="single")
-  
   dlname <- 'zone 1 temperature'
   par1_def <- ncvar_def("zone1temp","deg_C",list(timedim,ensdim),fillvalue,dlname,prec="single")
   dlname <- 'zone 2 temperature'
   par2_def <- ncvar_def("zone2temp","deg_C",list(timedim,ensdim),fillvalue,dlname,prec="single")
   dlname <- 'Kw'
   par3_def <- ncvar_def("Kw","unitless",list(timedim,ensdim),fillvalue,dlname,prec="single")
-  
-  dlname <- 'covariance matrix'
-  Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,longname = 'restart covariance matrix',prec="float")
-  
-  x_def <- ncvar_def("x_restart","-",list(ensdim,statedim),fillvalue,longname = 'matrix for restarting EnKF',prec="float")
+  dlname <- 'restart covariance matrix'
+  Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,dlname,prec="float")
+  dlname <- 'matrix for restarting EnKF'
+  x_def <- ncvar_def("x_restart","-",list(ensdim,statedim),fillvalue,dlname,prec="float")
   
   fillvalue <- -99
   dlname <- '0 = historical; 1 = forecasted'

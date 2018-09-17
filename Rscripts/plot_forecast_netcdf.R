@@ -1,20 +1,9 @@
-plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries){
+plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries,PRE_SCC){
   library(ncdf4)
   library(lubridate)
   #code_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SSC_forecasting/Rscripts'
   source(paste0(code_location,'/extract_temp_chain.R'))
-  
-  
-  #output_file <-'/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_forecast/FCR_hist_2018_9_7_forecast_2018_9_8_201898_9_59.nc'
-  #include_wq <- FALSE
-  #data_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data'
-  mia_location <- paste0(data_location,'/','mia-data')
-  setwd(mia_location)
-  system(paste0('git pull'))
-
-  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
-  
-  #plot_summaries <- FALSE
+  source(paste0(code_location,'/extract_temp_CTD.R'))
   
   nc <- nc_open(output_file)
   
@@ -23,6 +12,37 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   
   full_time <- as.POSIXct(t, origin = '1970-01-01 00:00.00 UTC', tz = 'EST5EDT')
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
+  
+  #output_file <-'/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_forecast/FCR_hist_2018_9_7_forecast_2018_9_8_201898_9_59.nc'
+  #include_wq <- FALSE
+  #data_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data'
+  if(!PRE_SCC){
+    mia_location <- paste0(data_location,'/','mia-data')
+    setwd(mia_location)
+    system(paste0('git pull'))
+    
+    catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
+    
+    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+    for(i in 1:length(obs_temp$obs[,1])){
+      for(j in 1:length(obs_temp$obs[1,])){
+        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
+          obs_temp$obs[i,j] = NA
+        } 
+      }
+    }
+    TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+    DoObservedDepths <- c(1,5,9)
+  }else{
+    the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+    fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
+    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init)
+    TempObservedDepths <- the_depths_init
+  }
+  
+  #plot_summaries <- FALSE
+  
+  
   temp_mean <- ncvar_get(nc,'temp_mean')
   temp <- ncvar_get(nc,'temp')
   temp_upper <- ncvar_get(nc,'temp_upperCI')
@@ -37,16 +57,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   forecast_index <- which(forecasted == 1)[1]
   nlayers <- length(depths)
   
-  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
-  for(i in 1:length(obs_temp$obs[,1])){
-    for(j in 1:length(obs_temp$obs[1,])){
-      if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
-        obs_temp$obs[i,j] = NA
-      } 
-    }
-  }
-  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-  DoObservedDepths <- c(1,5,9)
+  
   
   
   if(include_wq){
@@ -130,35 +141,35 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   ###PLOT HISTOGRAMS OF FORECAST
   par(mfrow=c(2,3))
   if(!is.na(forecast_index)){
-  if(length(which(forecast_index == 1)) > 6){
-    xlim<- range(c(temp[forecast_index+7,,obs_index[1]],z[forecast_index,1]),na.rm = TRUE)
-    hist(temp[forecast_index+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= z[forecast_index+7,1],col='red')
-    xlim<- range(c(temp[forecast_index+7,,obs_index[5]],z[forecast_index+7,5]),na.rm = TRUE)
-    hist(temp[forecast_index+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= z[forecast_index+7,5],col='red')
-    xlim<- range(c(temp[forecast_index+7,,obs_index[10]],z[forecast_index+7,10]),na.rm = TRUE)
-    hist(temp[forecast_index+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= z[forecast_index+7,10],col='red')
-  }
-  if(length(which(forecast_index == 1)) > 13){
-    xlim<- range(c(temp[forecast_index+14,,obs_index[1]],z[forecast_index+14,1]),na.rm = TRUE)
-    hist(temp[forecast_index+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= z[forecast_index+14,1],col='red')
-    xlim<- range(c(temp[forecast_index+14,,obs_index[5]],z[forecast_index+14,5]),na.rm = TRUE)
-    hist(temp[forecast_index+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= temp[forecast_index+14,5],col='red')
-    xlim<- range(c(temp[forecast_index+14,,obs_index[10]],z[forecast_index+14,10]),na.rm = TRUE)
-    hist(temp[forecast_index+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-    abline(v= z[forecast_index+14,10],col='red')
-  }
+    if(length(which(forecast_index == 1)) > 6){
+      xlim<- range(c(temp[forecast_index+7,,obs_index[1]],z[forecast_index,1]),na.rm = TRUE)
+      hist(temp[forecast_index+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= z[forecast_index+7,1],col='red')
+      xlim<- range(c(temp[forecast_index+7,,obs_index[5]],z[forecast_index+7,5]),na.rm = TRUE)
+      hist(temp[forecast_index+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= z[forecast_index+7,5],col='red')
+      xlim<- range(c(temp[forecast_index+7,,obs_index[10]],z[forecast_index+7,10]),na.rm = TRUE)
+      hist(temp[forecast_index+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= z[forecast_index+7,10],col='red')
+    }
+    if(length(which(forecast_index == 1)) > 13){
+      xlim<- range(c(temp[forecast_index+14,,obs_index[1]],z[forecast_index+14,1]),na.rm = TRUE)
+      hist(temp[forecast_index+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= z[forecast_index+14,1],col='red')
+      xlim<- range(c(temp[forecast_index+14,,obs_index[5]],z[forecast_index+14,5]),na.rm = TRUE)
+      hist(temp[forecast_index+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= temp[forecast_index+14,5],col='red')
+      xlim<- range(c(temp[forecast_index+14,,obs_index[10]],z[forecast_index+14,10]),na.rm = TRUE)
+      hist(temp[forecast_index+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+      abline(v= z[forecast_index+14,10],col='red')
+    }
   }
   
   par(mfrow=c(3,5))
   for(i in 3:17){
-  xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
-  prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
-  plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
+    xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
+    prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+    plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
   }
   
   dev.off()

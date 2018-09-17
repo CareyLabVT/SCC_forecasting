@@ -9,21 +9,23 @@ library(ncdf4)
 library(lubridate)
 library(RCurl)
 
-sim_name <- 'FCR_betaV2'
+sim_name <- 'FCR_betaV2_long'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2018-07-10 00:00:00'
-forecast_start_day <- '2018-09-12 00:00:00'
-spin_up_days <- 5
+start_day <- '2014-05-05 00:00:00' #'2018-07-10 00:00:00'
+forecast_start_day <- '2017-12-31 00:00:00'#'2018-09-12 00:00:00'
+spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
 init_restart_file <- NA
 init_run <- FALSE
 wait_time <- 60*60*2.5
-push_to_git <- TRUE
+push_to_git <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
+source(paste0(Folder,'/','Rscripts/plot_forecast_management.R'))
+source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
 
 if(!init_run){
   hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
@@ -41,6 +43,15 @@ if(!init_run){
     push_to_git=push_to_git,
     data_location = data_location
   )
+  
+  plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
+                           output_file = unlist(out)[1],
+                           include_wq = FALSE,
+                           code_location = paste0(Folder,'/Rscripts/'),
+                           save_location = forecast_location,
+                           data_location = data_location,
+                           plot_summaries = TRUE,
+                           PRE_SCC = FALSE)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
@@ -106,6 +117,15 @@ repeat{
   forecast_day_count <- forecast_day_count + 1
   
   restart_file <- unlist(out)[1]
+  
+  plot_forecast_management(pdf_file_name = paste0(unlist(out)[2],'_management.pdf'),
+                           output_file = unlist(out)[1],
+                           include_wq = FALSE,
+                           code_location = paste0(Folder,'/Rscripts/'),
+                           save_location = forecast_location,
+                           data_location = data_location,
+                           plot_summaries = TRUE,
+                           PRE_SCC = FALSE)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)

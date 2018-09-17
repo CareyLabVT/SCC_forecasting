@@ -1,12 +1,13 @@
 run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 50
+  nEnKFmembers <- 1
   include_wq <- FALSE
   num_pars <- 3
   
   USE_QT_MATRIX <- TRUE
   USE_CTD <- TRUE
+  PRE_SCC <- TRUE
   
   USE_OBS_CONTRAINT <- TRUE
   NO_UNCERT <- FALSE
@@ -36,7 +37,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   nMETmembers <- 21
   nmembers = nEnKFmembers*nMETmembers
-
+  
   ###DETECT THE PLATFORM###
   
   switch(Sys.info() [['sysname']],
@@ -112,7 +113,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   noaa_location <- paste0(data_location,'/','noaa-data')
   setwd(noaa_location)
   system(paste0('git pull'))
-
+  
   #download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
   #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
   #download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
@@ -123,15 +124,17 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
   
   ###CREATE FUTURE MET FILES
-  in_directory <- paste0(noaa_location)
-  out_directory <- workingGLM
-  file_name <- forecast_base_name
-  process_GEFS2GLM(in_directory,out_directory,file_name)
-  met_file_names <- rep(NA,nMETmembers)
-  for(i in 1:nMETmembers){
-    met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
+  if(forecast_days >0 ){
+    in_directory <- paste0(noaa_location)
+    out_directory <- workingGLM
+    file_name <- forecast_base_name
+    process_GEFS2GLM(in_directory,out_directory,file_name)
+    met_file_names <- rep(NA,nMETmembers)
+    for(i in 1:nMETmembers){
+      met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
+    }
   }
-
+  
   ###MOVE FILES AROUND
   SimFilesFolder <- paste0(Folder,'/','sim_files')
   GLM_folder <- paste0(Folder,'/','glm','/',machine) 
@@ -142,18 +145,32 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(!is.na(restart_file)){
     tmp <- file.copy(from = restart_file, to = workingGLM,overwrite = TRUE)
   }
+  if(PRE_SCC){
+    fl <- c(list.files('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/', full.names = TRUE))
+    tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
+  }
   
   ##CREATE INFLOW AND OUTFILE FILES
-  create_inflow_outflow_file(full_time,workingGLM)
+  if(!PRE_SCC){
+    create_inflow_outflow_file(full_time,workingGLM)
+  }
   
   if(include_wq){
     file.copy(from = paste0(workingGLM,'/','glm3_wAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
   }else{
-    file.copy(from = paste0(workingGLM,'/','glm3_woAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
-    
+    if(!PRE_SCC){
+      file.copy(from = paste0(workingGLM,'/','glm3_woAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
+    }else{
+      file.copy(from = paste0(workingGLM,'/','glm3_woAED_preSCC.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
+    }
   }
   
   ###SET UP RUN
+  
+  #DEFINE DEPTHS THAT ARE MODELED
+  the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+  nlayers_init <- length(the_depths_init)
+  
   wq_names <- c('OXY_oxy',
                 'CAR_pH','CAR_dic','CAR_ch4', 
                 'SIL_rsi',
@@ -190,27 +207,33 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   PHY_CHLOROPCH3_init <-2.0
   PHY_DIATOMPCH4_init <- 2.0
   
-  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
-  #PROCESS TEMPERATURE OBSERVATIONS
-  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
-  for(i in 1:length(obs_temp$obs[,1])){
-    for(j in 1:length(obs_temp$obs[1,])){
-      if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
-        obs_temp$obs[i,j] = NA
-      } 
+  if(!PRE_SCC){
+    catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
+    #PROCESS TEMPERATURE OBSERVATIONS
+    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+    for(i in 1:length(obs_temp$obs[,1])){
+      for(j in 1:length(obs_temp$obs[1,])){
+        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
+          obs_temp$obs[i,j] = NA
+        } 
+      }
     }
+    TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+    init_temps1 <- obs_temp$obs[1,]
+    
+    #PROCESS DO OBSERVATIONS
+    DoObservedDepths <- c(1,5,9)
+    obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
+    #mg/L (obs) -> mol/m3 * 31.25
+    
+  }else{
+    fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
+    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init)
+    TempObservedDepths <- the_depths_init
+    init_temps1 <- obs_temp$obs[1,]
   }
-  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-  init_temps1 <- obs_temp$obs[1,]
-
-  #PROCESS DO OBSERVATIONS
-  DoObservedDepths <- c(1,5,9)
-  obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
-  #mg/L (obs) -> mol/m3 * 31.25
-
-  #DEFINE DEPTHS THAT ARE MODELED
-  the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
-  nlayers_init <- length(the_depths_init)
+  
+  
   
   #NEED AN ERROR CHECK FOR WHETHER THERE ARE OBSERVED DATA
   if(is.na(restart_file)){
@@ -223,7 +246,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   #SET UP INITIAL CONDITIONS
-
+  
   temp_start <- 1
   temp_end <- length(the_depths_init)
   if(num_pars > 0){
@@ -304,7 +327,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   update_var(sw_factor,'sw_factor',workingGLM)
   update_var(lw_factor,'lw_factor',workingGLM)
-
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
@@ -353,7 +375,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
   #Process error 
-
+  
   if(USE_QT_MATRIX){
     Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
   }
@@ -382,6 +404,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   x <- array(NA,dim=c(nsteps,nmembers,nstates))
+  x_prior <- array(NA,dim=c(nsteps,nmembers,nstates))
+  
   #Initial conditions
   if(!restart_present){
     if(include_wq){
@@ -441,7 +465,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #Set initial conditions
   x[1,,] <- as.matrix(x_previous)
-  
+  x_prior[1,,] <- as.matrix(x_previous)
   #parameter_matrix <- array(NA,dim=c(nmembers,3))
   #parameter_matrix[,1] <- rnorm(nmembers,sw_factor,0.05)
   #parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
@@ -477,7 +501,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         update_var(c(x[i-1,m,par1],x[i-1,m,par2]),'sed_temp_mean',workingGLM)
         update_var(x[i-1,m,par3],'Kw',workingGLM)
       }
-
+      
       if(include_wq){
         wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
         update_var(wq_init_vals,'wq_init_vals',workingGLM)
@@ -485,15 +509,16 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
-      if(i > (hist_days+1)){
-        update_var(met_file_names[met_index],'meteo_fl',workingGLM)
-        update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
-        update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
-      }else{
-        update_var(obs_met_outfile,'meteo_fl',workingGLM)
-        update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
-        update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
-        
+      if(!PRE_SCC){
+        if(i > (hist_days+1)){
+          update_var(met_file_names[met_index],'meteo_fl',workingGLM)
+          update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+          update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+        }else{
+          update_var(obs_met_outfile,'meteo_fl',workingGLM)
+          update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+          update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+        }
       }
       
       #3) Use GLM NML files to run GLM for a day
@@ -527,6 +552,24 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
     }
     
+    #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCT NA VALUES
+    # THIS RANDOMLY REPLACES IT WITH A GOOD ENSEMBLE MEMBER
+    if(length(which(is.na(c(x_star))))>0){
+      print('here')
+      good_index <- NULL
+      for(m in 1:nmembers){
+        if(length(x_star[m,]) == 0){
+          good_index <- c(good_index,m)
+        }
+      }
+      for(m in 1:nmembers){
+        if(length(which(is.na(c(x_star[m,])))) > 0){
+          replace_index <- sample(good_index,1)
+          x_star[m,] <- x_star[replace_index,]
+        }
+      }
+    }
+    
     #Corruption [nmembers x nstates] 
     if(USE_QT_MATRIX){
       NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
@@ -543,6 +586,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       x_corr <- x_star + NQt
     }
     
+    x_prior[i,,] <- x_corr
     
     if(i >= spin_up_days+1){
       #Obs for time step
@@ -559,7 +603,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         #if observation then calucate Kalman adjustment
         zt <- z[i,z_index]
         z_states_t <- z_states[i,z_index]
-
+        
         #Assign which states have obs in the time step
         H <- array(0,dim=c(length(zt),nstates))
         for(j in 1:length(z_index)){
@@ -583,24 +627,24 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         
         #Loop through ensemble members
         for(m in 1:nmembers){  
-        #  
-        #  #Ensemble specific deviation
-         dit[m,] <- x_corr[m,]-ens_mean
-         #dit_star[m,] <- x_star[m,] - ens_mean_star #Adaptive noise estimation
-
-        #  #Ensemble specific estimate and innovation covariance
+          #  
+          #  #Ensemble specific deviation
+          dit[m,] <- x_corr[m,]-ens_mean
+          #dit_star[m,] <- x_star[m,] - ens_mean_star #Adaptive noise estimation
+          
+          #  #Ensemble specific estimate and innovation covariance
           if(m == 1){
             Pit <- dit[m,] %*% t(dit[m,]) 
-        #    Pit_star <- dit_star[m,] %*% t(dit_star[m,]) 
+            #    Pit_star <- dit_star[m,] %*% t(dit_star[m,]) 
           }else{
             Pit <- dit[m,] %*% t(dit[m,]) +  Pit 
-       #     Pit_star <- dit_star[m,] %*% t(dit_star[m,]) +  Pit_star 
+            #     Pit_star <- dit_star[m,] %*% t(dit_star[m,]) +  Pit_star 
           }
         }
         
         #estimate covariance
         Pt <- Pit/nmembers
-      
+        
         #Kalman gain
         Kt <- Pt %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
         
@@ -617,7 +661,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       x_restart <- x[i,,]
       Qt_restart <- Qt
     }
-
+    
   }
   
   if(forecast_days >0){
@@ -626,13 +670,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }else{
     save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))    
   }
-
+  
   ### SUMMARIZE FORECAST
   time_of_forecast <- Sys.time() #paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
   time_of_forecast_string <- paste0(year(Sys.time()),month(Sys.time()),day(Sys.time()),'_',hour(Sys.time()),'_',(minute(Sys.time())))
   
   ###SAVE FORECAST
-  write_forecast_netcdf(x =x ,
+  write_forecast_netcdf(x = x,
                         full_time = full_time,
                         Qt = Qt,
                         the_depths_init = the_depths_init,
@@ -644,13 +688,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
-                                     Folder = Folder, 
-                                     forecast_base_name = forecast_base_name, 
-                                     full_time = full_time,
-                                     forecast_location = forecast_location,
-                                     push_to_git = push_to_git,
-                                     save_file_name = save_file_name, 
-                                     time_of_forecast = time_of_forecast)
+                                        Folder = Folder, 
+                                        forecast_base_name = forecast_base_name, 
+                                        full_time = full_time,
+                                        forecast_location = forecast_location,
+                                        push_to_git = push_to_git,
+                                        save_file_name = save_file_name, 
+                                        time_of_forecast = time_of_forecast)
   
-  return(list(restart_file_name <- restart_file_name,sim_name <- sim_name))
+  return(list(restart_file_name <- restart_file_name,sim_name <- paste0(save_file_name,'_',time_of_forecast_string)))
 }
