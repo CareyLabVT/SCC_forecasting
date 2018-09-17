@@ -555,10 +555,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCT NA VALUES
     # THIS RANDOMLY REPLACES IT WITH A GOOD ENSEMBLE MEMBER
     if(length(which(is.na(c(x_star))))>0){
-      print('here')
       good_index <- NULL
       for(m in 1:nmembers){
-        if(length(x_star[m,]) == 0){
+        if(length(which(is.na(c(x_star[m,])))) == 0){
           good_index <- c(good_index,m)
         }
       }
