@@ -50,7 +50,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   dlname <- 'matrix for restarting EnKF'
   x_def <- ncvar_def("x_restart","-",list(ensdim,statedim),fillvalue,dlname,prec="float")
   dlname <- 'Predicted states prior to Kalman correction'
-  x_prior_def <- ncvar_def("x_prior","-",list(timedim,ensdim,depthdim),fillvalue,dlname,prec="float")
+  x_prior_def <- ncvar_def("x_prior","-",list(timedim,ensdim,statedim),fillvalue,dlname,prec="float")
   
   fillvalue <- -99
   dlname <- '0 = historical; 1 = forecasted'
