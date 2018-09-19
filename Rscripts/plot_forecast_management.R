@@ -1,4 +1,4 @@
-plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries,PRE_SCC){
+plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries,PRE_SCC,push_to_git){
   library(ncdf4)
   library(lubridate)
   
@@ -72,8 +72,8 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   nlayers <- length(depths)
   
   focal_depths <- c(4,16,25)
-  pdf(paste0(save_location,'/',pdf_file_name),width = 6, height = 10)
-  par(mfrow=c(2,1))
+  png(paste0(save_location,'/',pdf_file_name),width = 12, height = 6,units = 'in',res=300)
+  par(mfrow=c(1,2))
   
   #PLOT OF TURNOVER PROBABILITY
   prob_zero <- rep(NA,length(seq(3,17,1)))
@@ -82,7 +82,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   }
   
   plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(0,100),xlab = 'date',ylab = '% chance')
-  title(paste0('Falling Creek Reservior\n',month(tmp_day),'/',day(tmp_day),'/',year(tmp_day), '\n\nTurnover forecast'),cex.main=0.9)
+  title('Turnover forecast',cex.main=0.9)
   
   points(full_time[3:17],prob_zero,type='o',ylim=c(0,100),xlab = 'date',ylab = 'Probablity of turnover')
   axis(1, at=full_time_plotting,las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
@@ -127,6 +127,13 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
                     "DeepSkyBlue4", "blue2", "blue4"), cex=1, y.intersp=1, x.intersp=0.001, inset=c(0,0), xpd=T, bty='n')
   legend('topright', c('mean','confidence bounds'), lwd=1.5, lty=c('dashed','dotted'),bty='n',cex = 1)
 
-  
+  mtext(paste0('Falling Creek Reservior\n',month(tmp_day),'/',day(tmp_day),'/',year(tmp_day)), side = 3, line = -2, outer = TRUE, font = 2)
   dev.off()
+  
+  if(push_to_git){
+    setwd(save_location)
+    system(paste0('git add ',pdf_file_name))
+    system('git commit -m "forecast plot"')
+    system('git push')
+  }
 }
