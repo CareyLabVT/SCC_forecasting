@@ -13,14 +13,14 @@ sim_name <- 'FCR_betaV2'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2018-09-17 00:00:00'
-forecast_start_day <- '2017-12-31 00:00:00'
+start_day <- '2018-09-19 00:00:00'
+forecast_start_day <- '2018-09-20 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
-init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_16_forecast_2018_9_17_2018917_8_56.nc'
+init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_18_forecast_2018_9_19_2018919_6_1.nc'
 init_run <- TRUE
 wait_time <- 60*60*2.5
-push_to_git <- FALSE
+push_to_git <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))

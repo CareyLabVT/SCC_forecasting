@@ -23,6 +23,8 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   full_time_combined <- seq(full_time_past[1], full_time[length(full_time)], by = "1 day")
   
+  full_time_plotting <- seq(full_time_past[1]-days(3), full_time[length(full_time)]+days(4), by = "1 day")
+  
   
   mia_location <- paste0(data_location,'/','mia-data')
   setwd(mia_location)
@@ -70,15 +72,30 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   nlayers <- length(depths)
   
   focal_depths <- c(4,16,25)
-  pdf(paste0(save_location,'/',pdf_file_name),width = 5, height = 8)
+  pdf(paste0(save_location,'/',pdf_file_name),width = 6, height = 10)
   par(mfrow=c(2,1))
   
+  #PLOT OF TURNOVER PROBABILITY
+  prob_zero <- rep(NA,length(seq(3,17,1)))
+  for(i in 3:17){
+    prob_zero[i-3] = 100*length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+  }
+  
+  plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(0,100),xlab = 'date',ylab = '% chance')
+  title(paste0('Falling Creek Reservior\n',month(tmp_day),'/',day(tmp_day),'/',year(tmp_day), '\n\nTurnover forecast'),cex.main=0.9)
+  
+  points(full_time[3:17],prob_zero,type='o',ylim=c(0,100),xlab = 'date',ylab = 'Probablity of turnover')
+  axis(1, at=full_time_plotting,las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
+  abline(v = full_time_past[length(full_time_past)])
+  text(full_time_past[length(full_time_past)-2],80,'past')
+  text(full_time[4],80,'future')
   #HISTORICAL AND FUTURE TEMPERATURE
   depth_colors <- c("firebrick4","firebrick1","DarkOrange1","gold","greenyellow","medium sea green","sea green","DeepSkyBlue4","blue2","blue4")
 
-  plot(full_time_combined+days(3),rep(-99,length(full_time_combined+days(3))),ylim=c(5,30),xlab = 'date',ylab = 'degrees C')
-  title('solid = past; dashed = future mean; dotted = future uncertainty',cex.main=0.9)
-  axis(1, at=full_time_combined+days(3),las=2, cex.axis=0.7, tck=-0.025,labels=FALSE)
+  plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(5,35),xlab = 'date',ylab = expression(~degree~C))
+  title(paste0('Water temperature forecast'),cex.main=0.9)
+  tmp_day <- full_time[-1][1]
+  axis(1, at=full_time_plotting,las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
   
   for(i in 1:length(obs_index)){
     points(full_time_past, obs_temp_past$obs[,i],type='l',col=depth_colors[i],lwd=1.5)
@@ -91,19 +108,25 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   }
   
   abline(v = full_time_past[length(full_time_past)])
-  legend("right",c("0.1m","1m", "2m", "3m", "4m", "5m", "6m", "7m","8m", "9m"),
-         text.col=c("firebrick4", "firebrick1", "DarkOrange1", "gold", "greenyellow", "medium sea green", "sea green",
-                    "DeepSkyBlue4", "blue2", "blue4"), cex=1, y.intersp=1, x.intersp=0.001, inset=c(0,0), xpd=T, bty='n')
-  
-  #PLOT OF TURNOVER PROBABILITY
-  prob_zero <- rep(NA,length(seq(3,17,1)))
-  for(i in 3:17){
-    prob_zero[i-3] = 100*length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+  text(full_time_past[length(full_time_past)-2],30,'past')
+  text(full_time[4],30.1,'future')
+  if(temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]] == temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]] |
+     temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]] == temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]] |
+     temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]] == temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]]){
+  text(full_time_plotting[length(full_time_plotting)-3], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m', col='firebrick1')
+  text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m', col='medium sea green')
+  text(full_time_plotting[length(full_time_plotting)-1], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m', col='blue2')
+  }else{
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m', col='firebrick1')
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m', col='medium sea green')
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m', col='blue2') 
   }
   
-  plot(full_time_combined+days(3),rep(-99,length(full_time_combined+days(3))),ylim=c(0,100),xlab = 'date',ylab = '% chance',main = 'Probability of Turnover')
-  points(full_time[3:17],prob_zero,type='o',ylim=c(0,100),xlab = 'date',ylab = 'Probablity of Turnover')
-  axis(1, at=full_time_combined+days(3),las=2, cex.axis=0.7, tck=-0.025,labels=FALSE)
+    legend("left",c("0.1m","1m", "2m", "3m", "4m", "5m", "6m", "7m","8m", "9m"),
+         text.col=c("firebrick4", "firebrick1", "DarkOrange1", "gold", "greenyellow", "medium sea green", "sea green",
+                    "DeepSkyBlue4", "blue2", "blue4"), cex=1, y.intersp=1, x.intersp=0.001, inset=c(0,0), xpd=T, bty='n')
+  legend('topright', c('mean','confidence bounds'), lwd=1.5, lty=c('dashed','dotted'),bty='n',cex = 1)
+
   
   dev.off()
 }
