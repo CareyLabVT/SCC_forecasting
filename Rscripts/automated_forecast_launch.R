@@ -10,7 +10,7 @@ library(lubridate)
 library(RCurl)
 
 sim_name <- 'FCR_betaV2'
-Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
+Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_forecasting_dev/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
 start_day <- '2018-09-19 00:00:00'
@@ -19,8 +19,8 @@ spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
 init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_18_forecast_2018_9_19_2018919_6_1.nc'
 init_run <- TRUE
-wait_time <- 60*60*2.5
-push_to_git <- TRUE
+wait_time <- 60*10
+push_to_git <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -45,13 +45,13 @@ if(!init_run){
   )
   
   plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
-                           output_file = unlist(out)[1],
-                           include_wq = FALSE,
-                           code_location = paste0(Folder,'/Rscripts/'),
-                           save_location = forecast_location,
-                           data_location = data_location,
-                           plot_summaries = TRUE,
-                           PRE_SCC = FALSE)
+                       output_file = unlist(out)[1],
+                       include_wq = FALSE,
+                       code_location = paste0(Folder,'/Rscripts/'),
+                       save_location = forecast_location,
+                       data_location = data_location,
+                       plot_summaries = TRUE,
+                       PRE_SCC = FALSE)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
@@ -125,7 +125,8 @@ repeat{
                            save_location = forecast_location,
                            data_location = data_location,
                            plot_summaries = TRUE,
-                           PRE_SCC = FALSE)
+                           PRE_SCC = FALSE,
+                           push_to_git=push_to_git)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)
