@@ -4,7 +4,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   #Set dimensions
   ens <- seq(1,dim(x)[2],1)
   depth <- the_depths_init
-  t <- as.numeric(as.POSIXct(full_time),tz="EST5EDT",origin = '1970-01-01 00:00.00 UTC')
+  t <- as.numeric(as.POSIXct(full_time),tz='EST5EDT',origin = '1970-01-01 00:00.00 UTC')
   states <- seq(1,dim(x)[3],1)
   
   #Set variable that states whether value is forecasted

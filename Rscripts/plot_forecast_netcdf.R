@@ -23,7 +23,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     
     catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
     
-    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time, input_tz = 'EST5EDT', output_tz ='EST5EDT')
     for(i in 1:length(obs_temp$obs[,1])){
       for(j in 1:length(obs_temp$obs[1,])){
         if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){

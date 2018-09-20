@@ -74,6 +74,8 @@ get_glm_nc_var <- function(ncFile,z_out,var = 'temp'){
   temp <- ncvar_get(glm_nc, var)
   nc_close(glm_nc)
   
+  
+  
   elev_surf = get_surface_height(ncFile)
   
   max_i <- tallest_layer[length(tallest_layer)]
@@ -151,12 +153,14 @@ get_glm_nc_var_all_wq <- function(ncFile,z_out,vars){
   output <- array(NA,dim=c(num_dep,length(vars)))
   for(v in 1:length(vars)){
     temp <- ncvar_get(glm_nc, vars[v])
-    temp <- temp[1:max_i, length(tallest_layer)]
-    temps = temp
-    temps_re <- c(temps[1], temps, tail(temps,1))
+
+      temp <- temp[1:max_i, length(tallest_layer)]
+      temps = temp
+      temps_re <- c(temps[1], temps, tail(temps,1))
+      if(length(which(is.na(c(temps_re)))) == 0){
+      output[,v] <- approx(x = elevs_re, y = temps_re, xout = elevs_out)$y
+    }
     
-    output[,v] <- approx(x = elevs_re, y = temps_re, xout = elevs_out)$y
- 
   }
   nc_close(glm_nc)
   return(list(output = output,surface_height = elev_surf[2,length(tallest_layer)]))

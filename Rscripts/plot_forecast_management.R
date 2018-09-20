@@ -32,7 +32,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
   
-  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time = full_time_past)
+  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time = full_time_past, input_tz = 'EST5EDT', output_tz ='EST5EDT')
   for(i in 1:length(obs_temp_past$obs[,1])){
     for(j in 1:length(obs_temp_past$obs[1,])){
       if(obs_temp_past$obs[i,j] == 0 | is.na(obs_temp_past$obs[i,j]) | is.nan(obs_temp_past$obs[i,j])){
@@ -62,7 +62,6 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   temp_mean <- ncvar_get(nc,'temp_mean')
   
-  print(temp_mean[,1])
   temp <- ncvar_get(nc,'temp')
   temp_upper <- ncvar_get(nc,'temp_upperCI')
   temp_lower  <- ncvar_get(nc,'temp_lowerCI')
@@ -82,15 +81,15 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   par(mfrow=c(1,2))
   
   #PLOT OF TURNOVER PROBABILITY
-  prob_zero <- rep(NA,length(seq(3,17,1)))
-  for(i in 3:17){
-    prob_zero[i-3] = 100*length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+  prob_zero <- rep(NA,length(seq(2,17,1)))
+  for(i in 2:17){
+    prob_zero[i-2] = 100*length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
   }
   
   plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(0,100),xlab = 'date',ylab = '% chance')
   title('Turnover forecast',cex.main=0.9)
   
-  points(full_time[3:17],prob_zero,type='o',ylim=c(0,100),xlab = 'date',ylab = 'Probablity of turnover')
+  points(full_time[2:17],prob_zero,type='o',ylim=c(0,100),xlab = 'date',ylab = 'Probablity of turnover')
   axis(1, at=full_time_plotting,las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
   abline(v = full_time_past[length(full_time_past)])
   text(full_time_past[length(full_time_past)-2],80,'past')
@@ -101,15 +100,15 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(5,35),xlab = 'date',ylab = expression(~degree~C))
   title(paste0('Water temperature forecast'),cex.main=0.9)
   tmp_day <- full_time[-1][1]
-  axis(1, at=full_time_plotting,las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
+  axis(1, at=full_time_plotting + hours(4),las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
   
   for(i in 1:length(obs_index)){
     points(full_time_past, obs_temp_past$obs[,i],type='l',col=depth_colors[i],lwd=1.5)
     index <- which(obs_index[i]  == focal_depths)
     if(length(index) == 1){
-      points(full_time[-1], temp_mean[-1,obs_index[i]],type='l',lty='dashed',col=depth_colors[i],lwd=1.5) 
-      points(full_time[-1], temp_upper[-1,obs_index[i]],type='l',lty='dotted',col=depth_colors[i],lwd=1.5)
-      points(full_time[-1], temp_lower[-1,obs_index[i]],type='l',lty='dotted',col=depth_colors[i],lwd=1.5)
+      points(full_time, temp_mean[,obs_index[i]],type='l',lty='dashed',col=depth_colors[i],lwd=1.5) 
+      points(full_time, temp_upper[,obs_index[i]],type='l',lty='dotted',col=depth_colors[i],lwd=1.5)
+      points(full_time, temp_lower[,obs_index[i]],type='l',lty='dotted',col=depth_colors[i],lwd=1.5)
     }
   }
   

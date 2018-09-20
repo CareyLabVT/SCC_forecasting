@@ -1,4 +1,4 @@
-create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
+create_obs_met_input <- function(fname,outfile,full_time_hour_obs,input_tz = 'EST5EDT', output_tz = 'GMT'){
   d <- read.csv(fname, skip =3)
   d_names <- read.csv(fname, skip =1)
   names(d) <- names(d_names)
@@ -23,8 +23,11 @@ create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
   Rain = rep(NA,length(full_time_hour_obs)-1)
   Snow = rep(NA,length(full_time_hour_obs)-1)
   
-  d_time_tmp <- as.POSIXct(d$TIMESTAMP, format="%Y-%m-%d %H:%M")
-  full_time_tmp <- as.POSIXct(full_time_hour_obs)
+  d_time_tmp_in <- as.POSIXct(d$TIMESTAMP, format="%Y-%m-%d %H:%M",tz = input_tz)
+  full_time_tmp_in <- as.POSIXct(full_time_hour_obs,tz = input_tz)
+  
+  d_time_tmp <- with_tz(d_time_tmp_in,tzone = output_tz)
+  full_time_tmp <-  with_tz(full_time_tmp_in,tzone = output_tz)
   
   if(length(which(d_time_tmp==full_time_tmp[1]))>0){
   
@@ -59,9 +62,6 @@ create_obs_met_input <- function(fname,outfile,full_time_hour_obs){
   Snow = Snow[remove_hours]
   full_time_hour_obs = full_time_hour_obs[remove_hours]
   
-  
-  #GMT to EST conversion
-  #force_tz(full_time_hour_obs, tzone = "EST")
   #Save in GLM Format
   full_time_hour_obs = strftime(full_time_hour_obs, format="%Y-%m-%d %H:%M")
   GLM_climate = data.frame(full_time_hour_obs,ShortWave,LongWave,AirTemp,RelHum,WindSpeed,Rain,Snow)

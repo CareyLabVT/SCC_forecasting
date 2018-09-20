@@ -10,17 +10,18 @@ library(lubridate)
 library(RCurl)
 
 sim_name <- 'FCR_betaV2'
-Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_forecasting_dev/'
+Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2018-09-19 00:00:00'
-forecast_start_day <- '2018-09-20 00:00:00'
+start_day <- '2018-09-20 00:00:00'
+forecast_start_day <- '2018-09-21 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
-init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_18_forecast_2018_9_19_2018919_6_1.nc'
+init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_19_forecast_2018_9_20_2018920_7_32.nc'
 init_run <- TRUE
 wait_time <- 60*10
-push_to_git <- FALSE
+push_to_git <- TRUE
+reference_tzone <- 'GMT'
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -28,7 +29,7 @@ source(paste0(Folder,'/','Rscripts/plot_forecast_management.R'))
 source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
 
 if(!init_run){
-  hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, format = "%Y-%m-%d %H:%M:%S"), as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S")))
+  hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, tz = reference_tzone), as.POSIXct(start_day,tz = reference_tzone)))
   
   #FIRST DAY
   out <- run_forecast(
@@ -87,11 +88,7 @@ repeat{
     noaa_location <- paste0(data_location,'/','noaa-data')
     setwd(noaa_location)
     system(paste0('git pull'))
-    
-    
-    #tmp <-getURL(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name))
-    #tmp <- unlist(strsplit(tmp, '<'))
-    #if(tmp[2] == "!DOCTYPE html>\n"){
+
     if(!file.exists(paste0(noaa_location,'/',forecast_base_name))){
       print('Waiting for NOAA forecast')
       Sys.sleep(wait_time)
@@ -118,7 +115,7 @@ repeat{
   
   restart_file <- unlist(out)[1]
   
-  plot_forecast_management(pdf_file_name = paste0(unlist(out)[2],'_management.pdf'),
+  plot_forecast_management(pdf_file_name = paste0(unlist(out)[2],'_management.png'),
                            output_file = unlist(out)[1],
                            include_wq = FALSE,
                            code_location = paste0(Folder,'/Rscripts/'),

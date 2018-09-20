@@ -52,8 +52,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     Sys.setenv(LD_LIBRARY_PATH=paste("../glm/unix/", Sys.getenv("LD_LIBRARY_PATH"),sep=":"))
   }
   
-  ###CREATE TIME VECTOR
-  begin_sim  <- as.POSIXct(first_day)
+  #--CREATE TIME VECTOR---
+  # The simulations are run from 00:00:00 GMT time 
+  # so that they directly interface with the NOAA forecast
+  # The output is converted back to local time before being saved
+  
+  begin_sim  <- as.POSIXct(first_day,tz = reference_tzone)
   total_days <- hist_days + forecast_days
   end_sim <- begin_sim + total_days*24*60*60
   start_forecast_step <- hist_days
@@ -69,8 +73,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     forecast_month <- paste0(month(forecast_start_time))
   }
   full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
+  full_time_local <- with_tz(full_time,tzone = 'EST5EDT')
   full_time <- strftime(full_time, format="%Y-%m-%d %H:%M")
+  full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M")
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
+  full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d")
   full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
   nsteps <- length(full_time)
   
@@ -100,7 +107,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   met_obs_fname <-paste0(workingGLM,'/','FCRmet.csv')
   met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
-    sim_name <- paste0(year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]))
+    sim_name <- paste0(year(full_time_local[1]),'_',month(full_time_local[1]),'_',day(full_time_local[1]))
   }
   
   ###DOWNLOAD FILES TO WORKING DIRECTORY
@@ -121,14 +128,15 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   met_obs_fname <- paste0(carina_location,'/FCRmet.csv')
   ###CREATE HISTORICAL MET FILE
   obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
-  create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
+  create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   ###CREATE FUTURE MET FILES
   if(forecast_days >0 ){
     in_directory <- paste0(noaa_location)
     out_directory <- workingGLM
     file_name <- forecast_base_name
-    process_GEFS2GLM(in_directory,out_directory,file_name)
+    #NEED TO DOUBLE CHECK THE INPUT_TZ AND WHY IT IS EST
+    process_GEFS2GLM(in_directory,out_directory,file_name, input_tz = 'EST5EDT', output_tz = reference_tzone)
     met_file_names <- rep(NA,nMETmembers)
     for(i in 1:nMETmembers){
       met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
@@ -152,7 +160,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ##CREATE INFLOW AND OUTFILE FILES
   if(!PRE_SCC){
-    create_inflow_outflow_file(full_time,workingGLM)
+    create_inflow_outflow_file(full_time = full_time_day,workingGLM = workingGLM, input_tz = 'EST5EDT', output_tz = reference_tzone )
   }
   
   if(include_wq){
@@ -210,7 +218,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(!PRE_SCC){
     catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
     #PROCESS TEMPERATURE OBSERVATIONS
-    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
+    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
     for(i in 1:length(obs_temp$obs[,1])){
       for(j in 1:length(obs_temp$obs[1,])){
         if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
@@ -223,12 +231,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     
     #PROCESS DO OBSERVATIONS
     DoObservedDepths <- c(1,5,9)
-    obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
+    obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
     #mg/L (obs) -> mol/m3 * 31.25
     
   }else{
     fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
-    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init)
+    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
     TempObservedDepths <- the_depths_init
     init_temps1 <- obs_temp$obs[1,]
   }
@@ -552,19 +560,20 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
     }
     
-    #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCT NA VALUES
+    #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCE NA VALUES OR HAVE NEGATIVE TEMPERATURES
     # THIS RANDOMLY REPLACES IT WITH A GOOD ENSEMBLE MEMBER
     if(length(which(is.na(c(x_star))))>0){
       good_index <- NULL
       for(m in 1:nmembers){
-        if(length(which(is.na(c(x_star[m,])))) == 0){
+        if(length(which(is.na(c(x_star[m,])))) == 0 & length(which(c(x_star[m,]) <= 0)) == 0){
           good_index <- c(good_index,m)
         }
       }
       for(m in 1:nmembers){
-        if(length(which(is.na(c(x_star[m,])))) > 0){
+        if(length(which(is.na(c(x_star[m,])))) > 0 | length(which(c(x_star[m,]) <= 0) > 0)){
           replace_index <- sample(good_index,1)
           x_star[m,] <- x_star[replace_index,]
+          surface_height[i,m] <- surface_height[i,replace_index]
         }
       }
     }
@@ -676,7 +685,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   ###SAVE FORECAST
   write_forecast_netcdf(x = x,
-                        full_time = full_time,
+                        full_time = full_time_local,
                         Qt = Qt,
                         the_depths_init = the_depths_init,
                         save_file_name = save_file_name,
@@ -690,7 +699,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
                                         Folder = Folder, 
                                         forecast_base_name = forecast_base_name, 
-                                        full_time = full_time,
                                         forecast_location = forecast_location,
                                         push_to_git = push_to_git,
                                         save_file_name = save_file_name, 

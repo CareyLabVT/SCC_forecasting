@@ -1,10 +1,14 @@
-extract_temp_CTD <- function(fname,full_time_day,depths){
+extract_temp_CTD <- function(fname,full_time_day,depths,input_tz = 'EST5EDT', output_tz = reference_tzone){
   
   d <- read.csv(fname)
   d_fcr <- d[which(d$Reservoir == 'FCR' & d$Site == '50'),]
   d_fcr_day <- as.POSIXct(strftime(d_fcr$Date, format="%Y-%m-%d"))
   obs <- array(NA,dim=c(length(full_time_day),length(depths)))
   
+  TIMESTAMP_in <- as.POSIXct(d_fcr$Date,origin = '1970-01-01 00:00.00 UTC',tz = input_tz)
+  TIMESTAMP_out <- as.POSIXct(TIMESTAMP_in,tz = output_tz)
+  d_fcr_day <- as.POSIXct(strftime(TIMESTAMP_out, format="%Y-%m-%d"))
+
   for(i in 1:length(full_time_day)){
     index1 = which(d_fcr_day==full_time_day[i])
     if(length(index1)>0){

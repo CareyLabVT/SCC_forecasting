@@ -5,9 +5,9 @@ if (!"imputeTS" %in% installed.packages()) install.packages("imputeTS")
 library(imputeTS)
 if (!"lubridate" %in% installed.packages()) install.packages("lubridate")
 library(lubridate)
-process_GEFS2GLM <- function(in_directory,out_directory,file_name){
-  #directory <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_structure/data/met/forecast/met_forecast_processing/'
-  #file_name <- '20180625gep_all_00z'
+process_GEFS2GLM <- function(in_directory,out_directory,file_name,input_tz = 'EST5EDT',output_tz = 'GMT'){
+
+  
   f <- paste0(in_directory,'/',file_name,'.csv')
   if(!file.exists(f)){
     print('Missing forecast file!')
@@ -15,8 +15,8 @@ process_GEFS2GLM <- function(in_directory,out_directory,file_name){
     stop()
   }else{
     d <- read.csv(paste0(in_directory,'/',file_name,'.csv')) 
-    d$forecast.date <- as.POSIXct(d$forecast.date)
-    
+    forecast.date_local <- as.POSIXct(d$forecast.date, tz = input_tz)
+    d$forecast.date <- as.POSIXct(forecast.date_local, tz = output_tz)
     
     full_time <- rep(NA,length(d$forecast.date)*6)
     
@@ -81,11 +81,8 @@ process_GEFS2GLM <- function(in_directory,out_directory,file_name){
     
     AirTemp <- AirTemp - 273.15
     
-    #GMT to EST conversion
-    force_tz(full_time, tzone = "EST")
-    
     #Save in GLM Format
-    full_time = strftime(full_time, format="%Y-%m-%d %H:%M")
+    full_time = strftime(full_time, format="%Y-%m-%d %H:%M", tz = output_tz)
     for(ens in 1:21){
       GLM_climate = data.frame(full_time,ShortWave[,ens],LongWave[,ens],AirTemp[,ens],RelHum[,ens],WindSpeed[,ens],Rain[,ens],Snow[,ens])
       n= noquote(c('time','ShortWave','LongWave','AirTemp','RelHum','WindSpeed','Rain','Snow'))
