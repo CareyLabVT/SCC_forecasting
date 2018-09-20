@@ -7,7 +7,7 @@ extract_temp_chain <- function(fname,full_time){
   obs <- array(NA,dim=c(length(full_time),10))
   depths <- c(0.1,1,2,3,4,5,6,7,8,9)
   
-  d$TIMESTAMP <- as.POSIXct(d$TIMESTAMP)
+  d$TIMESTAMP <- as.POSIXct(d$TIMESTAMP,origin = '1970-01-01 00:00.00 UTC',tz = 'EST5EDT')
   full_time <- as.POSIXct(full_time)
   for(i in 1:length(full_time)){
     index = which(d$TIMESTAMP==full_time[i])

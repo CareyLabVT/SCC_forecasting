@@ -23,7 +23,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   full_time_combined <- seq(full_time_past[1], full_time[length(full_time)], by = "1 day")
   
-  full_time_plotting <- seq(full_time_past[1]-days(3), full_time[length(full_time)]+days(4), by = "1 day")
+  full_time_plotting <- seq(full_time_past[1]-days(3), full_time[length(full_time)]+days(5), by = "1 day")
   
   
   mia_location <- paste0(data_location,'/','mia-data')
@@ -32,7 +32,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
   
-  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time_past)
+  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time = full_time_past)
   for(i in 1:length(obs_temp_past$obs[,1])){
     for(j in 1:length(obs_temp_past$obs[1,])){
       if(obs_temp_past$obs[i,j] == 0 | is.na(obs_temp_past$obs[i,j]) | is.nan(obs_temp_past$obs[i,j])){
@@ -58,7 +58,11 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
     } 
   }
   
+
+  
   temp_mean <- ncvar_get(nc,'temp_mean')
+  
+  print(temp_mean[,1])
   temp <- ncvar_get(nc,'temp')
   temp_upper <- ncvar_get(nc,'temp_upperCI')
   temp_lower  <- ncvar_get(nc,'temp_lowerCI')
@@ -70,6 +74,8 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   nsteps <- length(full_time)
   forecast_index <- which(forecasted == 1)[1]
   nlayers <- length(depths)
+  
+  
   
   focal_depths <- c(4,16,25)
   png(paste0(save_location,'/',pdf_file_name),width = 12, height = 6,units = 'in',res=300)
@@ -113,13 +119,13 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   if(temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]] == temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]] |
      temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]] == temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]] |
      temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]] == temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]]){
-  text(full_time_plotting[length(full_time_plotting)-3], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m', col='firebrick1')
-  text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m', col='medium sea green')
-  text(full_time_plotting[length(full_time_plotting)-1], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m', col='blue2')
+  text(full_time_plotting[length(full_time_plotting)-3], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m:1660', col='firebrick1')
+  text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m:1647', col='medium sea green')
+  text(full_time_plotting[length(full_time_plotting)-1], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m:1637', col='blue2')
   }else{
-    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m', col='firebrick1')
-    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m', col='medium sea green')
-    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m', col='blue2') 
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[1]]),focal_depths[1]], '1m:1660', col='firebrick1')
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[2]]),focal_depths[2]], '5m:1647', col='medium sea green')
+    text(full_time_plotting[length(full_time_plotting)-2], temp_mean[length(temp_mean[,focal_depths[3]]),focal_depths[3]], '8m:1637', col='blue2') 
   }
   
     legend("left",c("0.1m","1m", "2m", "3m", "4m", "5m", "6m", "7m","8m", "9m"),
@@ -127,13 +133,15 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
                     "DeepSkyBlue4", "blue2", "blue4"), cex=1, y.intersp=1, x.intersp=0.001, inset=c(0,0), xpd=T, bty='n')
   legend('topright', c('mean','confidence bounds'), lwd=1.5, lty=c('dashed','dotted'),bty='n',cex = 1)
 
-  mtext(paste0('Falling Creek Reservior\n',month(tmp_day),'/',day(tmp_day),'/',year(tmp_day)), side = 3, line = -2, outer = TRUE, font = 2)
+  mtext(paste0('Falling Creek Reservoir\n',month(tmp_day),'/',day(tmp_day),'/',year(tmp_day)), side = 3, line = -2, outer = TRUE, font = 2)
   dev.off()
   
   if(push_to_git){
     setwd(save_location)
+    file.copy(from = paste0(save_location,'/',pdf_file_name), to = paste0(save_location,'/','Current_forecast.png'),overwrite=TRUE)
     system(paste0('git add ',pdf_file_name))
-    system('git commit -m "forecast plot"')
+    system(paste0('git add Current_forecast.png'))
+    system('git commit -m "forecast and plots"')
     system('git push')
   }
 }
