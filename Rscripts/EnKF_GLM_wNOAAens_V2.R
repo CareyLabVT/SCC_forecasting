@@ -74,11 +74,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
   full_time_local <- with_tz(full_time,tzone = 'EST5EDT')
-  full_time <- strftime(full_time, format="%Y-%m-%d %H:%M")
+  full_time <- strftime(full_time, format="%Y-%m-%d %H:%M",tz = reference_tzone)
   full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M")
   full_time_day <- strftime(full_time, format="%Y-%m-%d")
   full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d")
-  full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
+  full_time_hour_obs <- seq(as.POSIXct(full_time[1],tz = reference_tzone), as.POSIXct(full_time[length(full_time)],tz = reference_tzone), by = "1 hour") # grid
   nsteps <- length(full_time)
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE

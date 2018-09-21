@@ -13,12 +13,11 @@ sim_name <- 'FCR_betaV2'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2018-09-20 00:00:00'
+start_day <- '2018-09-18 00:00:00'
 forecast_start_day <- '2018-09-21 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- NA  #Set to NA if running into future
-init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_19_forecast_2018_9_20_2018920_7_32.nc'
-init_run <- TRUE
+init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
 wait_time <- 60*10
 push_to_git <- TRUE
 reference_tzone <- 'GMT'
@@ -28,7 +27,7 @@ source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
 source(paste0(Folder,'/','Rscripts/plot_forecast_management.R'))
 source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
 
-if(!init_run){
+if(is.na(init_restart_file)){
   hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, tz = reference_tzone), as.POSIXct(start_day,tz = reference_tzone)))
   
   #FIRST DAY

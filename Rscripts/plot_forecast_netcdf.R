@@ -11,7 +11,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   
   
   full_time <- as.POSIXct(t, origin = '1970-01-01 00:00.00 UTC', tz = 'EST5EDT')
-  full_time_day <- strftime(full_time, format="%Y-%m-%d")
+  full_time_day <- strftime(full_time, format="%Y-%m-%d", tz = 'EST5EDT')
   
   #output_file <-'/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/test_forecast/FCR_hist_2018_9_7_forecast_2018_9_8_201898_9_59.nc'
   #include_wq <- FALSE
@@ -36,7 +36,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   }else{
     the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
     fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
-    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init)
+    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init, input_tz = 'EST5EDT', output_tz ='EST5EDT')
     TempObservedDepths <- the_depths_init
   }
   
