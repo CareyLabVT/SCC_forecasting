@@ -41,7 +41,8 @@ if(is.na(init_restart_file)){
     Folder = Folder,
     forecast_location = forecast_location,
     push_to_git=push_to_git,
-    data_location = data_location
+    data_location = data_location,
+    nEnKFmembers = 50
   )
   
   plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
@@ -108,7 +109,8 @@ repeat{
     Folder = Folder,
     forecast_location = forecast_location,
     push_to_git=push_to_git,
-    data_location = data_location
+    data_location = data_location,
+    nEnKFmembers = 50
   )
   forecast_day_count <- forecast_day_count + 1
   

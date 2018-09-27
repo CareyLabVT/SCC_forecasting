@@ -1,7 +1,6 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA, nEnKFmembers = NA){
   
   ###RUN OPTIONS
-  nEnKFmembers <- 50
   include_wq <- FALSE
   num_pars <- 3
   
@@ -32,12 +31,22 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   alpha <- 0.5
   
   ####################################################
-  #### YOU WON'T NEED MODIFY ANYTHING BELOW HERE #####
+  #### YOU WON'T NEED TO MODIFY ANYTHING BELOW HERE ##
   ####################################################
   
+  # SET UP NUMBER OF ENSEMBLE MEMBERS
   nMETmembers <- 21
-  nmembers = nEnKFmembers*nMETmembers
-  
+  if(is.na(nEnKFmembers) & is.na(restart_file)){ 
+    nEnKFmembers <- 50
+    nmembers <- nEnKFmembers*nMETmembers
+  }else if(!is.na(restart_file)){
+    nc <- nc_open(restart_file)
+    nmembers <- length(ncvar_get(nc,'ens'))
+    nc_close(nc)
+  }else{
+    nmembers <- nEnKFmembers*nMETmembers
+  }
+
   ###DETECT THE PLATFORM###
   
   switch(Sys.info() [['sysname']],
