@@ -5,12 +5,15 @@ if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c(
 library(glmtools)
 
 first_day <- '2018-07-10 00:00:00'
+reference_tzone <- 'EST5EDT'
 sim_name <- 'prediction'
-hist_days <- 60
+hist_days <- 10
 forecast_days <- 0
 restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 machine <- 'mac'
+data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_Data/'
+PRE_SCC <- FALSE
 
 ###RUN OPTIONS
 #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -19,7 +22,7 @@ nMETmembers <- 1
 nmembers = nEnKFmembers*nMETmembers
 
 use_CTD <- FALSE
-include_wq <- FALSE
+include_wq <- TRUE
 NO_UNCERT <- FALSE
 ADD_NOISE_TO_OBS <- FALSE
 USE_OBS_DEPTHS <- FALSE
@@ -27,14 +30,19 @@ USE_OBS_CONTRAINT <- TRUE
 UPDATE_STATES_W_OBS <- FALSE
 
 ###CREATE TIME VECTOR
-begin_sim  <- as.POSIXct(first_day)
+begin_sim  <- as.POSIXct(first_day,tz = reference_tzone)
 total_days <- hist_days + forecast_days
 end_sim <- begin_sim + total_days*24*60*60
+start_forecast_step <- hist_days
 full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
-full_time <- strftime(full_time, format="%Y-%m-%d %H:%M")
+full_time_local <- with_tz(full_time,tzone = 'EST5EDT')
+full_time <- strftime(full_time, format="%Y-%m-%d %H:%M",tz = reference_tzone)
+full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M")
 full_time_day <- strftime(full_time, format="%Y-%m-%d")
-full_time_hour_obs <- seq(as.POSIXct(full_time[1]), as.POSIXct(full_time[length(full_time)]), by = "1 hour") # grid
+full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d")
+full_time_hour_obs <- seq(as.POSIXct(full_time[1],tz = reference_tzone), as.POSIXct(full_time[length(full_time)],tz = reference_tzone), by = "1 hour") # grid
 nsteps <- length(full_time)
+
 
 ###CREATE DIRECTORY PATHS AND STRUCTURE
 workingGLM <- paste0(Folder,'GLM_working/')  
@@ -67,12 +75,25 @@ if(is.na(sim_name)){
 }
 
 ###DOWNLOAD FILES TO WORKING DIRECTORY
-download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'FCRmet.csv'))
-download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'Catwalk.csv'))
+mia_location <- paste0(data_location,'/','mia-data')
+setwd(mia_location)
+system(paste0('git pull'))
+carina_location <- paste0(data_location,'/','carina-data')
+setwd(carina_location)
+system(paste0('git pull'))
+noaa_location <- paste0(data_location,'/','noaa-data')
+setwd(noaa_location)
+system(paste0('git pull'))
 
+#download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
+#download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+#download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
+
+met_obs_fname <- paste0(carina_location,'/FCRmet.csv')
 ###CREATE HISTORICAL MET FILE
-obs_met_outfile <- paste0(workingGLM,'GLM_met.csv')
-create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs)
+obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
+create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
+
 
 ###MOVE FILES AROUND
 SimFilesFolder <- paste0(Folder,'sim_files/')
@@ -122,12 +143,20 @@ PHY_CHLOROPCH3_init <-2.0
 PHY_DIATOMPCH4_init <- 2.0
 
 wq_names <- c('OXY_oxy',
-              'CAR_pH','CAR_dic','CAR_ch4', 
+              'CAR_pH','CAR_dic','CAR_ch4',
               'SIL_rsi',
               'NIT_amm', 'NIT_nit',
               'PHS_frp',
-              'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',  #'OGM_docr', 'OGM_donr', 'OGM_dopr','OGM_cpom', 
+              'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
               'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
+
+#wq_names <- c('OXY_oxy',
+#              'CAR_pH','CAR_dic','CAR_ch4', 
+#              'SIL_rsi',
+#              'NIT_amm', 'NIT_nit',
+#              'PHS_frp',
+#              'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',  #'OGM_docr', 'OGM_donr', 'OGM_dopr','OGM_cpom', 
+#              'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
 num_wq_vars <- length(wq_names) 
 
 if(include_wq){
@@ -136,7 +165,7 @@ glm_output_vars <- c('temp',wq_names)
   glm_output_vars <- c('temp')
 }
 
-the_sals_init <- 0.5
+the_sals_init <- 0.0
 
 
 #Parameters
@@ -159,23 +188,34 @@ lw_factor <- 0.95
 
 lake_depth_init <- 9.4
 
-#PROCESS TEMPERATURE OBSERVATIONS
-#if(!use_CTD){
-obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time)
-#}else{
-#  obs_temp <- extract_temp_CTD(fname = ctd_fname)
-#}
-
-#mg/L (obs) -> mol/m3 * 31.25
-obs_do <- extract_do_chain(fname = catwalk_fname,full_time)
-
-#KLUDGE TO GET WORKING
-TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-init_temps1 <- obs_temp$obs[1,]
-
-DoObservedDepths <- c(1,5,9)
+if(!PRE_SCC){
+  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
+  #PROCESS TEMPERATURE OBSERVATIONS
+  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  for(i in 1:length(obs_temp$obs[,1])){
+    for(j in 1:length(obs_temp$obs[1,])){
+      if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
+        obs_temp$obs[i,j] = NA
+      } 
+    }
+  }
+  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+  init_temps1 <- obs_temp$obs[1,]
+  
+  #PROCESS DO OBSERVATIONS
+  DoObservedDepths <- c(1,5,9)
+  obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  #mg/L (obs) -> mol/m3 * 31.25
+  
+}else{
+  fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
+  obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  TempObservedDepths <- the_depths_init
+  init_temps1 <- obs_temp$obs[1,]
+}
 
 temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
+the_temps_init <- temp_inter(the_depths_init)
 
 #SET UP INITIAL CONDITIONS
 if(USE_OBS_DEPTHS){
@@ -246,7 +286,7 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   PHS_frp_init_depth,
                   OGM_doc_init_depth,
                   OGM_poc_init_depth,
-                  OGM_don_init_depth,
+                 OGM_don_init_depth,
                   OGM_pon_init_depth,
                   OGM_dop_init_depth,
                   OGM_pop_init_depth,
@@ -257,7 +297,8 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   PHY_CYANOPCH1_init_depth,
                   PHY_CYANONPCH2_init_depth,
                   PHY_CHLOROPCH3_init_depth,
-                  PHY_DIATOMPCH4_init_depth)
+                  PHY_DIATOMPCH4_init_depth
+                  )
 
 #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
 update_var(wq_init_vals,'wq_init_vals',workingGLM)
@@ -383,6 +424,9 @@ for(i in 2:nsteps){
   if(include_wq){
     wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
     update_var(wq_init_vals,'wq_init_vals',workingGLM)
+  }else{
+    
+    
   }
   
   #3) Use GLM NML files to run GLM for a day
@@ -393,7 +437,7 @@ for(i in 2:nsteps){
   #}
   
   system(paste0(workingGLM,"glm"))
-  GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+  #GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
   
   #4) Fill x_star with temperatures from GLM
   #GLM_sals = get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
@@ -410,7 +454,7 @@ for(i in 2:nsteps){
 
   
   
-  
+  print(x_star)
   met_index <- 1
   
   #Obs for time step
@@ -433,7 +477,6 @@ for(i in 2:nsteps){
     obs = zt
     
     model_obs_array[1,i,] = x_star
-    print(x_star)
     model_obs_array[2,i,z_states_t] = z[i,z_index]
     model_obs_array[3,i,] = ndays
     
@@ -450,6 +493,7 @@ for(i in 2:nsteps){
 
 
 plot(model_obs_array[1,,1])
+plot(model_obs_array[1,,30])
 points(model_obs_array[2,,1],col='red')
 
 plot(model_obs_array[1,,1])
