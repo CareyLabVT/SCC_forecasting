@@ -148,7 +148,7 @@ wq_names <- c('OXY_oxy',
               'NIT_amm', 'NIT_nit',
               'PHS_frp',
               'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
-              'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
+              'PHY_PHY01')
 
 #wq_names <- c('OXY_oxy',
 #              'CAR_pH','CAR_dic','CAR_ch4', 
@@ -156,7 +156,7 @@ wq_names <- c('OXY_oxy',
 #              'NIT_amm', 'NIT_nit',
 #              'PHS_frp',
 #              'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',  #'OGM_docr', 'OGM_donr', 'OGM_dopr','OGM_cpom', 
-#              'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
+#              'PHY_','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
 num_wq_vars <- length(wq_names) 
 
 if(include_wq){
@@ -176,7 +176,7 @@ Kw <- 0.86
 #coef_mix_turb <- 0.51
 #coef_mix_KH <- 0.3
 #coef_mix_hyp <- 0.5
-wind_factor <- 0.5
+#wind_factor <- 0.5
 sw_factor <- 0.95
 lw_factor <- 0.95
 #at_factor <- 1
@@ -294,10 +294,10 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   #OGM_donr_init_depth,
                   #OGM_dopr_init_depth,
                   #OGM_cpom_init_depth,
-                  PHY_CYANOPCH1_init_depth,
-                  PHY_CYANONPCH2_init_depth,
-                  PHY_CHLOROPCH3_init_depth,
-                  PHY_DIATOMPCH4_init_depth
+                  PHY_CYANOPCH1_init_depth
+                  #PHY_CYANONPCH2_init_depth,
+                  #PHY_CHLOROPCH3_init_depth,
+                  #PHY_DIATOMPCH4_init_depth
                   )
 
 #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
