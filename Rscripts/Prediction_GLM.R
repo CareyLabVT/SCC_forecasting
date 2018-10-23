@@ -7,7 +7,7 @@ library(glmtools)
 first_day <- '2018-07-10 00:00:00'
 reference_tzone <- 'EST5EDT'
 sim_name <- 'prediction'
-hist_days <- 10
+hist_days <- 30
 forecast_days <- 0
 restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -141,6 +141,10 @@ PHY_CYANOPCH1_init <- 2.0
 PHY_CYANONPCH2_init <-2.0
 PHY_CHLOROPCH3_init <-2.0
 PHY_DIATOMPCH4_init <- 2.0
+ZOO_COPEPODS1_init <- 2.9
+ZOO_DAPHNIABIG2_init <- 4.3
+ZOO_DAPHNIASMALL3_init <- 40
+
 
 wq_names <- c('OXY_oxy',
               'CAR_pH','CAR_dic','CAR_ch4',
@@ -148,7 +152,8 @@ wq_names <- c('OXY_oxy',
               'NIT_amm', 'NIT_nit',
               'PHS_frp',
               'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
-              'PHY_PHY01')
+              'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4',
+              'ZOO_COPEPODS1','ZOO_DAPHNIABIG2','ZOO_DAPHNIASMALL3')
 
 #wq_names <- c('OXY_oxy',
 #              'CAR_pH','CAR_dic','CAR_ch4', 
@@ -271,7 +276,9 @@ PHY_CYANOPCH1_init_depth <- rep(PHY_CYANOPCH1_init,nlayers_init)
 PHY_CYANONPCH2_init_depth <- rep(PHY_CYANONPCH2_init,nlayers_init)
 PHY_CHLOROPCH3_init_depth <- rep(PHY_CHLOROPCH3_init,nlayers_init)
 PHY_DIATOMPCH4_init_depth <- rep(PHY_DIATOMPCH4_init,nlayers_init)
-
+ZOO_COPEPODS1_init_depth <- rep(ZOO_COPEPODS1_init,nlayers_init)
+ZOO_DAPHNIABIG2_init_depth <- rep(ZOO_DAPHNIABIG2_init,nlayers_init)
+ZOO_DAPHNIASMALL3_init_depth <- rep(ZOO_DAPHNIASMALL3_init,nlayers_init)
 
 #PHY_CYANOPCH1_init_depth[2:nlayers_init] <- 0
 #PHY_CYANOPCH1_init_depth[1] <- 100 
@@ -294,10 +301,13 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   #OGM_donr_init_depth,
                   #OGM_dopr_init_depth,
                   #OGM_cpom_init_depth,
-                  PHY_CYANOPCH1_init_depth
-                  #PHY_CYANONPCH2_init_depth,
-                  #PHY_CHLOROPCH3_init_depth,
-                  #PHY_DIATOMPCH4_init_depth
+                  PHY_CYANOPCH1_init_depth,
+                  PHY_CYANONPCH2_init_depth,
+                  PHY_CHLOROPCH3_init_depth,
+                  PHY_DIATOMPCH4_init_depth,
+                 ZOO_COPEPODS1_init_depth,
+                 ZOO_DAPHNIABIG2_init_depth,
+                 ZOO_DAPHNIASMALL3_init_depth
                   )
 
 #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
@@ -493,7 +503,7 @@ for(i in 2:nsteps){
 
 
 plot(model_obs_array[1,,1])
-plot(model_obs_array[1,,30])
+plot(model_obs_array[1,,631])
 points(model_obs_array[2,,1],col='red')
 
 plot(model_obs_array[1,,1])
