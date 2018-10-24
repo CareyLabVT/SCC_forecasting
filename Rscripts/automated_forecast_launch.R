@@ -3,11 +3,13 @@ if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4")
 if (!"lubridate" %in% installed.packages()) install.packages("lubridate")
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
 if (!"RCurl" %in% installed.packages()) install.packages('RCurl')
+if (!"testit" %in% installed.packages()) install.packages('testit')
 library(mvtnorm)
 library(glmtools)
 library(ncdf4)
 library(lubridate)
 library(RCurl)
+library(testit)
 
 sim_name <- 'FCR_betaV2'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'

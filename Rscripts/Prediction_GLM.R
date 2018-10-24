@@ -1,16 +1,17 @@
 library(mvtnorm)
 library(ncdf4)
 library(lubridate)
+library(testit)
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
 library(glmtools)
 
 first_day <- '2018-07-10 00:00:00'
 reference_tzone <- 'EST5EDT'
 sim_name <- 'prediction'
-hist_days <- 30
+hist_days <- 90
 forecast_days <- 0
 restart_file <- NA
-Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
+Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_forecasting_dev/'
 machine <- 'mac'
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_Data/'
 PRE_SCC <- FALSE
@@ -165,7 +166,7 @@ wq_names <- c('OXY_oxy',
 num_wq_vars <- length(wq_names) 
 
 if(include_wq){
-glm_output_vars <- c('temp',wq_names)
+  glm_output_vars <- c('temp',wq_names)
 }else{
   glm_output_vars <- c('temp')
 }
@@ -293,7 +294,7 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   PHS_frp_init_depth,
                   OGM_doc_init_depth,
                   OGM_poc_init_depth,
-                 OGM_don_init_depth,
+                  OGM_don_init_depth,
                   OGM_pon_init_depth,
                   OGM_dop_init_depth,
                   OGM_pop_init_depth,
@@ -305,10 +306,10 @@ wq_init_vals <- c(OXY_oxy_init_depth,
                   PHY_CYANONPCH2_init_depth,
                   PHY_CHLOROPCH3_init_depth,
                   PHY_DIATOMPCH4_init_depth,
-                 ZOO_COPEPODS1_init_depth,
-                 ZOO_DAPHNIABIG2_init_depth,
-                 ZOO_DAPHNIASMALL3_init_depth
-                  )
+                  ZOO_COPEPODS1_init_depth,
+                  ZOO_DAPHNIABIG2_init_depth,
+                  ZOO_DAPHNIASMALL3_init_depth
+)
 
 #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
 update_var(wq_init_vals,'wq_init_vals',workingGLM)
@@ -395,7 +396,7 @@ x <- array(NA,dim=c(nsteps,nstates))
 
 #Set initial conditions
 if(include_wq){
-x[1,] <- c(the_temps_init,wq_init_vals)
+  x[1,] <- c(the_temps_init,wq_init_vals)
 }else{
   x[1,] <- c(the_temps_init)
 }
@@ -445,26 +446,39 @@ for(i in 2:nsteps){
   #}else if(machine == 'unix'){
   #  system(paste0(workingGLM,"glm"))
   #}
-  
-  system(paste0(workingGLM,"glm"))
-  #GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
-  
-  #4) Fill x_star with temperatures from GLM
-  #GLM_sals = get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
-  
-  if(include_wq){
-    GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
-    x_star <- c(GLM_temp_wq_out$output)
-    surface_height[i] <- GLM_temp_wq_out$surface_height 
-  }else{
-    GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
-    x_star[temp_start:temp_end] <- GLMtemps 
-    surface_height[i] <- GLM_temp_wq_out$surface_height 
+  pass <- FALSE
+  num_reruns <- 0
+  while(!pass){
+    
+    unlink(paste0(workingGLM,'/output.nc')) 
+    system(paste0(workingGLM,"glm"))
+    #GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+    
+    #4) Fill x_star with temperatures from GLM
+    #GLM_sals = get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
+    
+    
+    if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
+      if(include_wq){
+        GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+        x_star <- c(GLM_temp_wq_out$output)
+        surface_height[i] <- GLM_temp_wq_out$surface_height 
+      }else{
+        GLMtemps <- get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
+        x_star[temp_start:temp_end] <- GLMtemps 
+        surface_height[i] <- GLM_temp_wq_out$surface_height 
+      }
+      if(length(which(is.na(x_star)))==0){
+        pass = TRUE
+      }else{
+        num_reruns <- num_reruns + 1
+      }
+    }
+    if(num_reruns > 1000){
+      stop(paste0('Too many re-runs (> 1000) due to NaN values in output'))
+    }
   }
-
   
-  
-  print(x_star)
   met_index <- 1
   
   #Obs for time step
@@ -491,9 +505,9 @@ for(i in 2:nsteps){
     model_obs_array[3,i,] = ndays
     
     if(UPDATE_STATES_W_OBS & !include_wq){
-    temp_inter <- approxfun(TempObservedDepths,z[i,z_index],rule=2)
-    the_temps_init <- temp_inter(the_depths_init)
-    x[i,] =  the_temps_init
+      temp_inter <- approxfun(TempObservedDepths,z[i,z_index],rule=2)
+      the_temps_init <- temp_inter(the_depths_init)
+      x[i,] =  the_temps_init
     }else{
       x[i,] =  x_star
     }
@@ -514,23 +528,22 @@ z_index = 1
 plot(model_obs_array[1,,z_states[1,z_index]],type = 'o',ylim=c(5,35))
 points(model_obs_array[2,,z_states[1,z_index]],col='red',type = 'o')
 for(z_index in 1:10){
-points(model_obs_array[1,,z_states[i,z_index]],col='black',type = 'o')
-points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')
+  points(model_obs_array[1,,z_states[i,z_index]],col='black',type = 'o')
+  points(model_obs_array[2,,z_states[i,z_index]],col='red',type = 'o')
 }
 i = 2
 for(z_index in 1:10){
-print(sqrt(mean((model_obs_array[1,,z_states[i,z_index]] - model_obs_array[2,,z_states[i,z_index]])^2,na.rm = TRUE)))
+  print(sqrt(mean((model_obs_array[1,,z_states[i,z_index]] - model_obs_array[2,,z_states[i,z_index]])^2,na.rm = TRUE)))
 }
 
-lim<- range(x[,wq_start[16]:wq_end[16]],na.rm = TRUE)
-plot(x[,wq_start[16]+which(the_depths_init == 0.1)-1],type='l',ylim=lim)
-points(x[,wq_start[16]+which(the_depths_init == 1)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 2)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 3)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 4)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 5)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 6)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 7)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 8)-1],type='l')
-points(x[,wq_start[16]+which(the_depths_init == 9)-1],type='l')
-
+lim<- range(x[,wq_start[1]:wq_end[1]],na.rm = TRUE)
+plot(x[,wq_start[1]+which(the_depths_init == 0.1)-1],type='l',ylim=lim)
+points(x[,wq_start[1]+which(the_depths_init == 1)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 2)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 3)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 4)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 5)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 6)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 7)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 8)-1],type='l')
+points(x[,wq_start[1]+which(the_depths_init == 9)-1],type='l')

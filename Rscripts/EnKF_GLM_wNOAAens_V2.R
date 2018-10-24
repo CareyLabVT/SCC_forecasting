@@ -46,7 +46,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }else{
     nmembers <- nEnKFmembers*nMETmembers
   }
-
+  
   ###DETECT THE PLATFORM###
   
   switch(Sys.info() [['sysname']],
@@ -539,19 +539,40 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       }
       
       #3) Use GLM NML files to run GLM for a day
-      system(paste0(workingGLM,'/','glm'))
+      # Only allow simulations without NaN values in the output to proceed.  Necessary due to random
+      # Nan in AED output
+      pass <- FALSE
+      num_reruns <- 0
       
-      if(include_wq){
-        GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
-        x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
-      }else{
-        GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
-        x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
+      while(!pass){
+        unlink(paste0(workingGLM,'/output.nc')) 
+        system(paste0(workingGLM,'/','glm'))
+        
+        if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
+          if(include_wq){
+            GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+            x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
+          }else{
+            GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
+            x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
+          }
+          x_star[m,par1] <- x[i-1,m,par1]
+          x_star[m,par2] <- x[i-1,m,par2]
+          x_star[m,par3] <- x[i-1,m,par3]
+          surface_height[i,m] <- GLM_temp_wq_out$surface_height 
+          if(length(which(is.na(x_star[m,])))==0){
+            pass = TRUE
+          }else{
+            num_reruns <- num_reruns + 1
+          }
+        }else{
+          num_reruns <- num_reruns + 1
+        }
+        
+        if(num_reruns > 1000){
+          stop(paste0('Too many re-runs (> 1000) due to NaN values in output'))
+        }
       }
-      x_star[m,par1] <- x[i-1,m,par1]
-      x_star[m,par2] <- x[i-1,m,par2]
-      x_star[m,par3] <- x[i-1,m,par3]
-      surface_height[i,m] <- GLM_temp_wq_out$surface_height 
       
       #INCREMENT THE MET_INDEX TO MOVE TO THE NEXT NOAA ENSEMBLE
       met_index = met_index + 1
@@ -559,13 +580,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         met_index <- 1
       }
       
-      if(!USE_QT_MATRIX){
-        corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error) #tmp(the_depths_init)
-        corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
-        corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
-        corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
-        x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
-      }
+      #if(!USE_QT_MATRIX){
+      #  corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error) #tmp(the_depths_init)
+      #  corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
+      #  corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+      #  corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
+      #  x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
+      #}
       
     }
     
