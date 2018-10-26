@@ -549,6 +549,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         system(paste0(workingGLM,'/','glm'))
         
         if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
+          if(length(ncvar_get(nc_open('output.nc'),'time')) > 1){
           if(include_wq){
             GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
             x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
@@ -565,6 +566,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
           }else{
             num_reruns <- num_reruns + 1
           }
+        }else{
+          num_reruns <- num_reruns + 1
         }else{
           num_reruns <- num_reruns + 1
         }

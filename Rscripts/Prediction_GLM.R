@@ -6,12 +6,13 @@ if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c(
 library(glmtools)
 
 first_day <- '2018-07-10 00:00:00'
+last_day <- '2018-10-23 00:00:00'
 reference_tzone <- 'EST5EDT'
 sim_name <- 'prediction'
-hist_days <- 90
+hist_days <- as.numeric(as.POSIXct(last_day)-as.POSIXct(first_day))
 forecast_days <- 0
 restart_file <- NA
-Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_forecasting_dev/'
+Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 machine <- 'mac'
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_Data/'
 PRE_SCC <- FALSE
@@ -458,7 +459,9 @@ for(i in 2:nsteps){
     #GLM_sals = get_glm_nc_var(ncFile = 'output.nc',z_out = the_depths_init, var = 'temp')
     
     
+    
     if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
+      if(length(ncvar_get(nc_open('output.nc'),'time')) > 1){
       if(include_wq){
         GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
         x_star <- c(GLM_temp_wq_out$output)
@@ -472,6 +475,7 @@ for(i in 2:nsteps){
         pass = TRUE
       }else{
         num_reruns <- num_reruns + 1
+      }
       }
     }
     if(num_reruns > 1000){
@@ -517,7 +521,6 @@ for(i in 2:nsteps){
 
 
 plot(model_obs_array[1,,1])
-plot(model_obs_array[1,,631])
 points(model_obs_array[2,,1],col='red')
 
 plot(model_obs_array[1,,1])
@@ -536,14 +539,19 @@ for(z_index in 1:10){
   print(sqrt(mean((model_obs_array[1,,z_states[i,z_index]] - model_obs_array[2,,z_states[i,z_index]])^2,na.rm = TRUE)))
 }
 
-lim<- range(x[,wq_start[1]:wq_end[1]],na.rm = TRUE)
-plot(x[,wq_start[1]+which(the_depths_init == 0.1)-1],type='l',ylim=lim)
-points(x[,wq_start[1]+which(the_depths_init == 1)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 2)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 3)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 4)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 5)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 6)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 7)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 8)-1],type='l')
-points(x[,wq_start[1]+which(the_depths_init == 9)-1],type='l')
+par(mfrow=c(3,3))
+for(i in 1:length(wq_names)){
+focal_wq_var <- i
+lim<- range(x[,wq_start[focal_wq_var]:wq_end[focal_wq_var]],na.rm = TRUE)
+plot(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 0.1)-1],type='l',ylim=lim,col='black',main=wq_names[focal_wq_var])
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 1)-1],type='l',col='green')
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 2)-1],type='l',col='brown')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 3)-1],type='l')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 4)-1],type='l')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 5)-1],type='l')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 6)-1],type='l')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 7)-1],type='l')
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 8)-1],type='l',col='orange')
+#points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 9)-1],type='l')
+#legend('topright',c('0.1 m','1 m','2 m','8 m'),lty=c(1,1,1,1),col=c('black','green','brown','orange'))
+}
