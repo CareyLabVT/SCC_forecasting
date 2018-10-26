@@ -5,9 +5,9 @@ library(testit)
 if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
 library(glmtools)
 
-first_day <- '2018-07-10 00:00:00'
-last_day <- '2018-10-23 00:00:00'
-reference_tzone <- 'EST5EDT'
+first_day <- '2013-05-14 00:00:00'
+last_day <- '2014-11-13 00:00:00'
+reference_tzone <- 'GMT'
 sim_name <- 'prediction'
 hist_days <- as.numeric(as.POSIXct(last_day)-as.POSIXct(first_day))
 forecast_days <- 0
@@ -15,7 +15,7 @@ restart_file <- NA
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 machine <- 'mac'
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_Data/'
-PRE_SCC <- FALSE
+PRE_SCC <- TRUE
 
 ###RUN OPTIONS
 #Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
@@ -95,7 +95,11 @@ met_obs_fname <- paste0(carina_location,'/FCRmet.csv')
 ###CREATE HISTORICAL MET FILE
 obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
 create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
-
+if(PRE_SCC){
+  fl <- c(list.files(paste0(data_location,'/PreSCC/'), full.names = TRUE))
+  file.copy(from = fl, to = workingGLM,overwrite = TRUE)
+  obs_met_outfile = paste0(workingGLM,'/','FCR_GLM_met_NLDAS2_010113_010118_GMTadjusted.csv')
+}
 
 ###MOVE FILES AROUND
 SimFilesFolder <- paste0(Folder,'sim_files/')
@@ -115,7 +119,11 @@ if(!is.na(restart_file)){
 create_inflow_outflow_file(full_time,workingGLM)
 
 if(include_wq){
+  if(PRE_SCC){
+    file.copy(from = paste0(workingGLM,'glm3_wAED_preSCC.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+  }else{
   file.copy(from = paste0(workingGLM,'glm3_wAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
+  }
 }else{
   file.copy(from = paste0(workingGLM,'glm3_woAED.nml'), to = paste0(workingGLM,'glm3.nml'),overwrite = TRUE)
 }
@@ -195,6 +203,9 @@ lw_factor <- 0.95
 
 lake_depth_init <- 9.4
 
+the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+
+
 if(!PRE_SCC){
   catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
   #PROCESS TEMPERATURE OBSERVATIONS
@@ -219,10 +230,11 @@ if(!PRE_SCC){
   obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
   TempObservedDepths <- the_depths_init
   init_temps1 <- obs_temp$obs[1,]
+  DoObservedDepths <- c(1,5,9)
 }
 
+
 temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
-the_temps_init <- temp_inter(the_depths_init)
 
 #SET UP INITIAL CONDITIONS
 if(USE_OBS_DEPTHS){
@@ -234,10 +246,13 @@ if(USE_OBS_DEPTHS){
   nlayers_init <- length(the_depths_init)
   the_temps_init <- temp_inter(the_depths_init)
   do_init <- rep(NA,length(the_depths_init))
-  do_init[1:13] <- obs_do$obs[1,1]
-  do_init[14:23] <- obs_do$obs[1,2]
-  do_init[24:29] <- obs_do$obs[1,3]
+  #do_init[1:13] <- obs_do$obs[1,1]
+  #do_init[14:23] <- obs_do$obs[1,2]
+  #do_init[24:29] <- obs_do$obs[1,3]
 }
+
+
+the_temps_init <- temp_inter(the_depths_init)
 
 temp_start <- 1
 temp_end <- length(the_depths_init)
@@ -355,7 +370,8 @@ if(include_wq){
 #an observation with at least 1 observation but without an observation in a time-step gets assigned an NA
 z <- t(matrix(rep(NA,nobs), nrow = nobs, ncol = nsteps))
 if(include_wq){
-  z <- cbind(obs_temp$obs,obs_do$obs)
+  #z <- cbind(obs_temp$obs,obs_do$obs)
+  z <- cbind(obs_temp$obs) 
 }else{
   z <- cbind(obs_temp$obs) 
 }
@@ -375,6 +391,12 @@ if(include_wq){
   for(i in 1:length(DoObservedDepths)){
     obs_index[length(TempObservedDepths)+i] <- length(the_depths_init) + which.min(abs(the_depths_init - DoObservedDepths[i]))
   }
+  
+  obs_index <- rep(NA,length(TempObservedDepths))
+  for(i in 1:length(TempObservedDepths)){
+    obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
+  }
+
 }else{
   obs_index <- rep(NA,length(TempObservedDepths))
   for(i in 1:length(TempObservedDepths)){
@@ -411,8 +433,15 @@ met_index <- 1
 model_obs_array = array(NA,c(3,nsteps,nstates))  
 ndays = 0
 update_var(obs_met_outfile,'meteo_fl',workingGLM)
-update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
-update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+
+
+if(!PRE_SCC){
+  update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+  update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+}else{
+  #update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
+  #update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
+}
 
 model_obs_array[1,1,] = x[1,]
 model_obs_array[2,1,obs_index] = z[1,]
@@ -429,12 +458,12 @@ for(i in 2:nsteps){
   x_star <- array(NA, dim = c(nstates))
   
   #2) Use x[i-1,m,] to update GLM NML files for initial temperature at each depth
-  tmp <- update_temps(curr_temps = x[i-1,temp_start:temp_end],the_depths_init,workingGLM)
-  update_var(surface_height[i-1],'lake_depth',workingGLM)
+  tmp <- update_temps(curr_temps = round(x[i-1,temp_start:temp_end],3),the_depths_init,workingGLM)
+  update_var(round(surface_height[i-1],3),'lake_depth',workingGLM)
   #print(x[i-1,temp_start:temp_end])
   
   if(include_wq){
-    wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
+    wq_init_vals <- round(c(x[i-1,wq_start[1]:wq_end[num_wq_vars]]),3)
     update_var(wq_init_vals,'wq_init_vals',workingGLM)
   }else{
     
@@ -479,7 +508,7 @@ for(i in 2:nsteps){
       }
     }
     if(num_reruns > 1000){
-      stop(paste0('Too many re-runs (> 1000) due to NaN values in output'))
+      print(paste0('Too many re-runs (> 1000) due to NaN values in output'))
     }
   }
   
@@ -539,19 +568,21 @@ for(z_index in 1:10){
   print(sqrt(mean((model_obs_array[1,,z_states[i,z_index]] - model_obs_array[2,,z_states[i,z_index]])^2,na.rm = TRUE)))
 }
 
+pdf('AED_test.pdf',width = 7, height = 7)
 par(mfrow=c(3,3))
 for(i in 1:length(wq_names)){
 focal_wq_var <- i
 lim<- range(x[,wq_start[focal_wq_var]:wq_end[focal_wq_var]],na.rm = TRUE)
-plot(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 0.1)-1],type='l',ylim=lim,col='black',main=wq_names[focal_wq_var])
-points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 1)-1],type='l',col='green')
-points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 2)-1],type='l',col='brown')
+plot(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 0.1)-1],type='l',ylim=lim,col='black',main=wq_names[focal_wq_var],ylab = 'GLM units',xlab='day')
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 1)-1],type='l',col='green',ylab = 'GLM units',xlab='day')
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 2)-1],type='l',col='brown',ylab = 'GLM units',xlab='day')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 3)-1],type='l')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 4)-1],type='l')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 5)-1],type='l')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 6)-1],type='l')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 7)-1],type='l')
-points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 8)-1],type='l',col='orange')
+points(as.POSIXct(full_time),x[,wq_start[focal_wq_var]+which(the_depths_init == 8)-1],type='l',col='orange',ylab = 'GLM units',xlab='day')
 #points(as.POSIXct(full_time),x[,wq_start[1]+which(the_depths_init == 9)-1],type='l')
-#legend('topright',c('0.1 m','1 m','2 m','8 m'),lty=c(1,1,1,1),col=c('black','green','brown','orange'))
+legend('bottomright',c('0.1 m','1 m','2 m','8 m'),lty=c(1,1,1,1),col=c('black','green','brown','orange'),bty='n')
 }
+dev.off()

@@ -20,7 +20,7 @@
             'aed2_phosphorus',
             'aed2_organic_matter',
             'aed2_phytoplankton',
-            'aed2_zooplankton',
+           'aed2_zooplankton',
             'aed2_totals'
 /
 
@@ -61,20 +61,20 @@
 !  Fsed_feii = Sedimentation flux for iron
 !-------------------------------------------------------------------------------
 &aed2_sed_constant
-  Fsed_oxy = -100 ! Mendota was -20.0 !!!! -3
-   Fsed_rsi = 10 !!!! 1.8
-   Fsed_amm = 5 !FCR 30 !!!!3.0
-   Fsed_nit = -1 !FCR -8 !!!! -0.5
-   Fsed_frp = 0.10 !FCR 0.40 !!!! 0.008
-   Fsed_pon = -0.01
-   Fsed_don = 5.0
-   Fsed_pop = -0.01
-   Fsed_dop = -900.0 !!!! ? Check this one out
-   Fsed_poc = -0.01
-   Fsed_doc = 30.0
-   Fsed_dic = 100 !!!! 3.0
-   Fsed_ch4 = 10 !!!! 0.0
-   Fsed_feii = 0 !!0
+   Fsed_oxy = -9 ! intermediate for Sunapee (-0.005) and Mendota (-20)
+   Fsed_rsi = 10 !*****5 for Sunapee; 10 for Mendota
+   Fsed_amm = 5 !*****0.01 for Sunapee, 30 for Mendota
+   Fsed_nit = -1 !*****-2.5 for Sunapee, -8 for Mendota
+   Fsed_frp = 0.10 !*****0.003 for Sunapee, 0.40 for Mendota
+   Fsed_pon = -0.01 !same for Mendota and Sunapee
+   Fsed_don = 5.0 !*****0.01 for Sunapee, 5 for Mendota
+   Fsed_pop = -0.01 !*****-0.001 for Sunapee, -0.01 for Mendota
+   Fsed_dop = -900.0 !*****0.001 for Sunapee, -900 for Mendota
+   Fsed_poc = -0.01 !same for Mendota and Sunapee
+   Fsed_doc = 30.0 !*****0.1 for Sunapee, 30 for Mendota
+   Fsed_dic = 100 !*****10 for Sunapee, 100 for Mendota
+   Fsed_ch4 = 10 !same for Mendota and Sunapee
+   Fsed_feii = 0 !*****10 for Sunapee, 0 for Mendota
 /
 
 
@@ -86,15 +86,35 @@
 !   fsed        = list of sedimentation fluxes for the tracers
 !-------------------------------------------------------------------------------
 &aed2_tracer
-  num_tracers = 1
-  decay = 0      !, 0, 0, ...
-  settling = -0.1  !, 0, 0, ....
-  fsed = 0       !, 0, 0, ...
-  epsilon = 0.02 !, 0.02, 0.02
-  tau_0 = 0.01   !, 0.01, 0.01
-  tau_r = 1.0    !, 1.0, 1.0
-  Ke_ss = 0.02   !, 0.02, 0.02
-  retention_time = .true.
+!  num_tracers = 1
+!  decay = 0      !, 0, 0, ...
+!  settling = -0.1  !, 0, 0, ....
+!  fsed = 0       !, 0, 0, ...
+!  epsilon = 0.02 !, 0.02, 0.02
+!  tau_0 = 0.01   !, 0.01, 0.01
+!  tau_r = 1.0    !, 1.0, 1.0
+!  Ke_ss = 0.02   !, 0.02, 0.02
+!  retention_time = .true.
+   !-- Optional retention time tracer
+    retention_time = .true.
+   !-- Select number of tracers/ss's and their decay/sedflux/light properties
+    num_tracers = 1
+    decay = 0,0
+    Fsed = 0,0
+    Ke_ss = 0.06,0.063
+   !-- Configure sediment resuspension
+    settling = 3
+    w_ss = -0.000001
+    d_ss = 4e-6,1e-5
+    rho_ss = 1.5e3,1.8e3
+   !-- Configure sediment resuspension
+    resuspension = 1
+    fs = 0.7
+    epsilon = 0.0250
+    tau_0 = 0.03
+    tau_r = 1.0
+    Ktau_0 = 0.001
+!   macrophyte_link_var = 'MAC_chara'
 /
 
 
@@ -121,10 +141,10 @@
 !
 !-------------------------------------------------------------------------------
 &aed2_oxygen
-   oxy_initial = 225.0
-   Fsed_oxy = -10.0
-   Ksed_oxy = 50.0
-   theta_sed_oxy = 1.08
+   oxy_initial = 225.0 !overwritten by GLM nml
+   Fsed_oxy = -9 ! intermediate for Mendota and Sunapee
+   Ksed_oxy = 7 ! 6.8 is same for Mendota and FCR
+   theta_sed_oxy = 1.08 !going to go for the same theta throughout
 !  Fsed_oxy_variable = 'SDF_Fsed_oxy'
 /
 
@@ -175,21 +195,21 @@
 !-------------------------------------------------------------------------------
 &aed2_carbon
    !-- DIC and pH --
-   dic_initial = 1600.5
-   Fsed_dic = 3.0
-   Ksed_dic = 20.0
+   dic_initial = 200 !1600 for Mendota; Bobbie found TIC long-term average to be 4 mg/L or 91 mmol/3
+   Fsed_dic = 7 !10 for Sunapee, 100 for Mendota, 4 in manual
+   Ksed_dic = 30! 40 ! 20.0, 30 in manual
    theta_sed_dic = 1.08
 !  Fsed_dic_variable='SDF_Fsed_dic'
-   pH_initial = 7.5
-   atmco2 = 370e-6
-   ionic = 0.1
+   pH_initial = 6.2 !6.2 !both 8.4 for Mendota and Sunapee, changed to long-term avg of Munger et al. 2016 WR in the hypolimnion, 6.8 in epilimnion; 8 in manual
+   atmco2 = 400e-6
+   ionic = 0.1 ! 0.1 for Sunapee, 0.1 for Mendota
    !-- CH4 --
-   ch4_initial = 27.6
-   Rch4ox = 0.01
-   Kch4ox = 0.5
+   ch4_initial = 5! 1 !based on similar values for previous May weather in FCR; formerly 27.6
+   Rch4ox = 0.01 !1 !!!! 0.01 in manual
+   Kch4ox = 0.5 !0.1 !! 0.5 in manual
    vTch4ox = 1.08
-   Fsed_ch4 = 0.5
-   Ksed_ch4 = 100.0
+   Fsed_ch4 = 4 !100 !!!! 0.5 in manual
+   Ksed_ch4 = 60! 15 ! 100 in manual
    theta_sed_ch4 = 1.08
    methane_reactant_variable='OXY_oxy'
 !  Fsed_ch4_variable='SDF_Fsed_ch4'
@@ -206,9 +226,9 @@
 !  Fsed_rsi_variable        = silica flux variable link
 !-------------------------------------------------------------------------------
 &aed2_silica
-   rsi_initial = 300 !!!! 12.5
-   Fsed_rsi = 4 !!!! 1.8
-   Ksed_rsi = 150 !!!! 50.0
+   rsi_initial = 12.5 !300 !!!! 12.5
+   Fsed_rsi = 4 !4 !!!! 1.8
+   Ksed_rsi = 50 !150 !!!! 50.0
    theta_sed_rsi = 1.08
    silica_reactant_variable='OXY_oxy'
 !  Fsed_rsi_variable = 'SDF_Fsed_rsi'
@@ -261,8 +281,8 @@
 !
 !-------------------------------------------------------------------------------
 &aed2_nitrogen
-   amm_initial = 12.5
-   nit_initial = 27.6
+   amm_initial = 12.7 !12.5
+   nit_initial = 23.5 !27.6
    Rnitrif = 0.1
    Rdenit = 0.25 !!!!0.5
    Fsed_amm = 5 !!!! 3.0
@@ -391,60 +411,6 @@
 !
 !-------------------------------------------------------------------------------
 &aed2_organic_matter
-   !-- ORGANIC NITROGEN
-!  pon_initial = 50.0
-!  don_initial = 50.0
-!  w_pon = 0.0
-!  Rpon_miner = 0.01
-!  Rdon_miner = 0.01
-!  Fsed_pon = -0.01
-!  Fsed_don = 5.0
-!  Kpon_miner = 31.25
-!  Kdon_miner = 31.25
-!  Ksed_don = 4.5
-!  theta_pon_miner = 1.08
-!  theta_don_miner = 1.08
-!  theta_sed_don = 1.08
-!  don_miner_product_variable='NIT_amm'
-!  !-- ORGANIC PHOSPHORUS
-!  pop_initial = 1.0
-!  dop_initial = 1.0
-!  w_pop = 0.0
-!  Rpop_miner = 0.001
-!  Rdop_miner = 0.0001
-!  Fsed_pop = -0.01
-!  Fsed_dop = -900.0
-!  Kpop_miner = 31.25
-!  Kdop_miner = 31.25
-!  Ksed_dop = 40.5
-!  theta_pop_miner = 1.08
-!  theta_dop_miner = 1.08
-!  theta_sed_dop = 1.08
-!  dop_miner_product_variable='PHS_frp'
-!  !-- ORGANIC CARBON
-!  poc_initial = 80.0
-!  doc_initial = 80.0
-!  w_poc = 0.0
-!  Rpoc_miner = 0.01
-!  Rdoc_miner = 0.01
-!  Fsed_poc = 0.00
-!  Fsed_doc = 10.0
-!  Kpoc_miner = 31.25
-!  Kdoc_miner = 31.25
-!  Ksed_doc = 4.5
-!  theta_poc_miner = 1.08
-!  theta_doc_miner = 1.08
-!  theta_sed_doc = 1.08
-!  KeDOM=0.001
-!  KePOM=0.001
-!  doc_miner_reactant_variable='OXY_oxy'
-!  doc_miner_product_variable= 'CAR_dic'
-!! Fsed_pon_variable='SDF_Fsed_pon'
-!! Fsed_don_variable='SDF_Fsed_don'
-!! Fsed_pop_variable='SDF_Fsed_pop'
-!! Fsed_dop_variable='SDF_Fsed_dop'
-!! Fsed_poc_variable='SDF_Fsed_poc'
-!! Fsed_doc_variable='SDF_Fsed_doc'
    !-- Initial concentrations for OM variables (mmol/m3)
           poc_initial  = 78.5
           doc_initial  = 39.9
@@ -454,50 +420,50 @@
           dop_initial  = 1.5
           docr_initial = 350.00
           donr_initial = 13.0
- 		  dopr_initial = 1.0 !!!! 3.0
+          dopr_initial = 3.0 !1.0 !!!! 3.0 in manual
           cpom_initial = 100.00
    !-- Breakdown and mineralisation (basic pool)
-          Rpoc_hydrol  = 0.01 !!!! 0.05
-          Rdoc_minerl  = 0.03 !!!! 0.001
-          Rpon_hydrol  = 0.01 !!!! 0.05
-          Rdon_minerl  = 0.01 !!!! 0.005
-          Rpop_hydrol  = 0.01 !!!! 0.05
-          Rdop_minerl  = 0.01 !!!! 0.001
+          Rpoc_hydrol  = 0.05 !0.01 !!!! 0.05
+          Rdoc_minerl  = 0.001 !0.03 !!!! 0.001
+          Rpon_hydrol  = 0.05 !0.01 !!!! 0.05
+          Rdon_minerl  = 0.005 !0.01 !!!! 0.005
+          Rpop_hydrol  = 0.05 !0.01 !!!! 0.05
+          Rdop_minerl  = 0.001 !0.01 !!!! 0.001
           theta_hydrol = 1.08
           theta_minerl = 1.08
           Kpom_hydrol  = 31.25 !!!!
           Kdom_minerl  = 31.25 !!!!
           doc_miner_reactant_variable='OXY_oxy'
-          doc_miner_product_variable='CAR_dic'
+          doc_miner_product_variable='CAR_dic' !'CAR_dic' set to CAR_pCO2???
           don_miner_product_variable='NIT_amm'
           dop_miner_product_variable='PHS_frp'
           !-- Refractory organic matter (optional)
-           simRPools    = .true. !!!! .false.
-          Rdocr_miner  = 0.0005 !!!! 0.0001
-          Rdonr_miner  = 0.001 !!!! 0.0001
-          Rdopr_miner  = 0.001 !!!! 0.0001
-          Rcpom_bdown  = 0.001 !!!! 0.0001
-          X_cpom_n     = 0.005 !!!! 0.0005
-          X_cpom_p     = 0.001 !!!! 0.0001
+          simRPools    = .false. ! .true. !!!! .false.
+          Rdocr_miner  = 0.0001  ! 0.0005 !!!! 0.0001
+          Rdonr_miner  = 0.0001  ! 0.001 !!!! 0.0001
+          Rdopr_miner  = 0.0001  ! 0.001 !!!! 0.0001
+          Rcpom_bdown  = 0.0001  ! 0.001 !!!! 0.0001
+          X_cpom_n     = 0.0005  ! 0.005 !!!! 0.0005
+          X_cpom_p     = 0.0001  ! 0.001 !!!! 0.0001
           !-- Light related parameters
-          KeDOM        = 0.0005 !0.000005
+          KeDOM        = 0.000005 ! 0.0005 !0.000005
           KePOM        = 0.00096
-          KeDOMR       = 0.000500 !0.000100 !!!! 0.10000    ! = 1 (assuming KeDOMR is applied to CDOM in /m)
+          KeDOMR       = 0.10000 ! 0.000500 !0.000100 !!!! 0.10000    ! = 1 (assuming KeDOMR is applied to CDOM in /m)
           KeCPOM       = 0.00096    ! = 0.08 (/m)/(mg/L)  /83.3  (mmol/m3)/(mg/L)
           simphotolysis = .false. !.true.
           !photo_fmin
           photo_c      = 0.75
           !-- Particle settling parameters
           settling     = 3 !!!! 3
-          w_pom        = -1 !!!! -0.06
+          w_pom        = -0.06 ! -1 !!!! -0.06
           d_pom        = 2e-6
           rho_pom      = 1.12e3
-          w_cpom       = -1 !!!! -0.01
+          w_cpom       = -0.01 ! -1 !!!! -0.01
           d_cpom       = 1e-5
           rho_cpom     = 1.3e3
           !-- Sediment interaction parameters (basic model)
           resuspension = 1
-          !resus_link   = 'TRC_resus'
+          resus_link   = 'TRC_resus'
           sedimentOMfrac = 0.5
           Xsc = 0.5
           Xsn = 0.05
@@ -505,9 +471,9 @@
           Fsed_doc = 2.0
           Fsed_don = 1.0
           Fsed_dop = 0.020
-         !Fsed_doc_variable,
-         !Fsed_dop_variable,
-         !Fsed_don_variable,
+         !Fsed_doc_variable, !!!!
+         !Fsed_dop_variable, !!!!
+         !Fsed_don_variable, !!!!
           Ksed_dom = 4.5
           theta_sed_dom = 1.08
           !-- Other options
@@ -595,8 +561,8 @@
 !
 !-------------------------------------------------------------------------------
 &aed2_zooplankton
-   num_zoops = 3
-   the_zoops = 1,2,3
+   num_zoops = 3 !!!! 1
+   the_zoops = 1,2,3 !!!! 1
    dn_target_variable='OGM_don'  ! dissolved nitrogen target variable
    pn_target_variable='OGM_pon'  ! particulate nitrogen target variable
    dp_target_variable='OGM_dop'  ! dissolved phosphorus target variable
@@ -619,6 +585,7 @@
 !  TSS_varscale = scaling of TSS variables contribution
 !-------------------------------------------------------------------------------
 &aed2_totals
+   outputLight  = .true.
    TN_vars =  'NIT_nit',
               'NIT_amm',
               'OGM_don',
@@ -627,27 +594,58 @@
               'PHY_CYANONPCH2_IN',
               'PHY_CHLOROPCH3_IN',
               'PHY_DIATOMPCH4_IN'
-   TN_varscale = 1.0, 1.0, 1.0, 1.0, 0.15
+   TN_varscale = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
    TP_vars =  'PHS_frp',
+              !'PHS_frp_ads',
               'OGM_dop',
               'OGM_pop',
               'PHY_CYANOPCH1_IP',
               'PHY_CYANONPCH2_IP',
               'PHY_CHLOROPCH3_IP',
               'PHY_DIATOMPCH4_IP'
-   TP_varscale = 1.0, 1.0, 1.0, 1.0, 0.01
+   TP_varscale = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ,1.0 ,1.0
+   !!!! TOC_vars = 'OGM_docr',
    TOC_vars = 'OGM_doc',
-   			  'OGM_docr',
+            !  'OGM_docr', !!!!!!COMMENTED THIS OUT
               'OGM_poc',
               'PHY_CYANOPCH1',
    			  'PHY_CYANONPCH2',
    			  'PHY_CHLOROPCH3',
    			  'PHY_DIATOMPCH4'
-   TOC_varscale = 1.0, 1.0, 1.0, 1.0
+   TOC_varscale = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 !!!!, 1.0
    TSS_vars = 'OGM_poc',
-             'PHY_CYANOPCH1',
+   			  'PHY_CYANOPCH1',
    			  'PHY_CYANONPCH2',
    			  'PHY_CHLOROPCH3',
    			  'PHY_DIATOMPCH4'
-   TSS_varscale = 0.012,0.012,0.012,0.012,0.012           !,  <vector same length as TSS names>
-/
+    TSS_varscale = 0.012,0.012,0.012,0.012,0.012 ! because AED likes mg/L for this var
+
+   !TFe_vars =  'GEO_FeOH3A',
+   !            'GEO_FeII',
+   !            'GEO_FeIII'
+   !TFe_varscale = 1.,1.,1.
+   !TAl_vars =  'TRC_ss1',
+   !            'GEO_Al',
+   !TAl_varscale = 0.4,1.
+/  !
+!&aed2_totals
+!   TN_vars =  'NIT_nit',
+!              'NIT_amm',
+!              'OGM_don',
+!              'OGM_pon',
+!              'PHY_green_IN'
+!   TN_varscale = 1.0, 1.0, 1.0, 1.0, 0.15
+!   TP_vars =  'PHS_frp',
+!              'PHS_frp_ads',
+!              'OGM_dop',
+!              'OGM_pop',
+!              'PHY_green_IP'
+!   TP_varscale = 1.0, 1.0, 1.0, 1.0, 0.01
+!   TOC_vars = 'OGM_doc',
+!              'OGM_poc',
+!              'PHY_green'
+!   TOC_varscale = 1.0, 1.0, 1.0, 1.0
+!   TSS_vars = 'TRC_ss1',
+!              'PHY_green' !, ....
+!  TSS_varscale = 0.1,0.1            !,  <vector same length as TSS names>
+!/

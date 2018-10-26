@@ -1,4 +1,5 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA, nEnKFmembers = NA){
+run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,
+                       restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA, nEnKFmembers = NA){
   
   ###RUN OPTIONS
   include_wq <- FALSE
@@ -189,12 +190,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   nlayers_init <- length(the_depths_init)
   
   wq_names <- c('OXY_oxy',
-                'CAR_pH','CAR_dic','CAR_ch4', 
+                'CAR_pH','CAR_dic','CAR_ch4',
                 'SIL_rsi',
                 'NIT_amm', 'NIT_nit',
                 'PHS_frp',
-                'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',  #'OGM_docr', 'OGM_donr', 'OGM_dopr','OGM_cpom', 
-                'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4')
+                'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
+                'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4',
+                'ZOO_COPEPODS1','ZOO_DAPHNIABIG2','ZOO_DAPHNIASMALL3')
+  
   num_wq_vars <- length(wq_names) 
   glm_output_vars <- c('temp',wq_names)
   
@@ -223,6 +226,45 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   PHY_CYANONPCH2_init <-2.0
   PHY_CHLOROPCH3_init <-2.0
   PHY_DIATOMPCH4_init <- 2.0
+  ZOO_COPEPODS1_init <- 2.9
+  ZOO_DAPHNIABIG2_init <- 4.3
+  ZOO_DAPHNIASMALL3_init <- 40
+  
+  OXY_oxy_error <- 0.001
+  CAR_pH_error <- 0.001
+  CAR_dic_error <- 0.001
+  CAR_ch4_error <- 0.001
+  SIL_rsi_error <- 0.001
+  NIT_amm_error <- 0.001
+  NIT_nit_error <- 0.001
+  PHS_frp_error <- 0.001
+  OGM_doc_error <- 0.001
+  OGM_poc_error <- 0.001
+  OGM_don_error <- 0.001
+  OGM_pon_error <- 0.001
+  OGM_dop_error <- 0.001
+  OGM_pop_error <- 0.001
+  OGM_docr_error <- 0.001
+  OGM_donr_error <- 0.001
+  OGM_dopr_error <- 0.001
+  OGM_cpom_error <- 0.001
+  PHY_CYANOPCH1_error <- 0.001
+  PHY_CYANONPCH2_error <-0.001
+  PHY_CHLOROPCH3_error <-0.001
+  PHY_DIATOMPCH4_error <- 0.001
+  ZOO_COPEPODS1_error <- 0.001
+  ZOO_DAPHNIABIG2_error <- 0.001
+  ZOO_DAPHNIASMALL3_error <- 0.001
+  
+  wq_var_error <- c(OXY_oxy_error,
+                    CAR_pH_error,CAR_dic_error,CAR_ch4_error,
+                    SIL_rsi_error,
+                    NIT_amm_error,NIT_nit_error,
+                    PHS_frp_error,
+                    OGM_doc_error,OGM_poc_error, OGM_don_error ,OGM_pon_error,OGM_dop_error,OGM_pop_error,
+                    PHY_CYANOPCH1_error,PHY_CYANONPCH2_error,PHY_CHLOROPCH3_error,PHY_DIATOMPCH4_error,
+                    ZOO_COPEPODS1_error,ZOO_DAPHNIABIG2_error,ZOO_DAPHNIASMALL3_error)
+  
   
   if(!PRE_SCC){
     catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
@@ -241,7 +283,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     #PROCESS DO OBSERVATIONS
     DoObservedDepths <- c(1,5,9)
     obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    #mg/L (obs) -> mol/m3 * 31.25
+    #mg/L (obs units) -> mol/m3 (glm units)
+    obs_do$obs <- obs_do$obs*32/1000
     
   }else{
     fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
@@ -264,26 +307,42 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #SET UP INITIAL CONDITIONS
   
-  temp_start <- 1
-  temp_end <- length(the_depths_init)
-  if(num_pars > 0){
-    par1 <- temp_end + 1
-    par2 <- par1 + 1
-    par3 <-  par2 + 1
+  if(include_wq){
+    temp_start <- 1
+    temp_end <- length(the_depths_init)
+    wq_start <- rep(NA,num_wq_vars)
+    wq_end <- rep(NA,num_wq_vars)
+    for(wq in 1:num_wq_vars){
+      if(wq == 1){
+        wq_start[wq] <- temp_end+1
+        wq_end[wq] <- temp_end + (length(the_depths_init))
+      }else{
+        wq_start[wq] <- wq_end[wq-1]+1
+        wq_end[wq] <- wq_end[wq-1] + (length(the_depths_init))
+      }
+      
+      if(num_pars > 0){
+        par1 <- wq_end[num_wq_vars] + 1
+        par2 <- par1 + 1
+        par3 <-  par2 + 1
+      }else{
+        par1 <- wq_end[num_wq_vars]
+        par2 <- wq_end[num_wq_vars]
+        par3 <- wq_end[num_wq_vars]
+      }
+      
+    }
   }else{
-    par1 <- temp_end
-    par2 <- temp_end
-    par3 <- temp_end
-  }
-  wq_start <- rep(NA,num_wq_vars)
-  wq_end <- rep(NA,num_wq_vars)
-  for(wq in 1:num_wq_vars){
-    if(wq == 1){
-      wq_start[wq] <- par1+1
-      wq_end[wq] <- par1 + (length(the_depths_init))
+    temp_start <- 1
+    temp_end <- length(the_depths_init)
+    if(num_pars > 0){
+      par1 <- temp_end + 1
+      par2 <- par1 + 1
+      par3 <-  par2 + 1
     }else{
-      wq_start[wq] <- wq_end[wq-1]+1
-      wq_end[wq] <- wq_end[wq-1] + (length(the_depths_init))
+      par1 <- temp_end
+      par2 <- temp_end
+      par3 <- temp_end
     }
   }
   
@@ -302,14 +361,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   OGM_pon_init_depth <- rep(OGM_pon_init,nlayers_init)
   OGM_dop_init_depth <- rep(OGM_dop_init,nlayers_init)
   OGM_pop_init_depth <- rep(OGM_pop_init,nlayers_init)
-  #OGM_docr_init_depth <- rep(OGM_docr_init,nlayers_init)
-  #OGM_donr_init_depth <- rep(OGM_donr_init,nlayers_init)
-  #OGM_dopr_init_depth <- rep(OGM_dopr_init,nlayers_init)
-  #OGM_cpom_init_depth <- rep(OGM_cpom_init,nlayers_init)
   PHY_CYANOPCH1_init_depth <- rep(PHY_CYANOPCH1_init,nlayers_init)
   PHY_CYANONPCH2_init_depth <- rep(PHY_CYANONPCH2_init,nlayers_init)
   PHY_CHLOROPCH3_init_depth <- rep(PHY_CHLOROPCH3_init,nlayers_init)
   PHY_DIATOMPCH4_init_depth <- rep(PHY_DIATOMPCH4_init,nlayers_init)
+  ZOO_COPEPODS1_init_depth <- rep(ZOO_COPEPODS1_init,nlayers_init)
+  ZOO_DAPHNIABIG2_init_depth <- rep(ZOO_DAPHNIABIG2_init,nlayers_init)
+  ZOO_DAPHNIASMALL3_init_depth <- rep(ZOO_DAPHNIASMALL3_init,nlayers_init)
   
   wq_init_vals <- c(OXY_oxy_init_depth,
                     CAR_pH_init_depth,
@@ -325,29 +383,26 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
                     OGM_pon_init_depth,
                     OGM_dop_init_depth,
                     OGM_pop_init_depth,
-                    #OGM_docr_init_depth,
-                    #OGM_donr_init_depth,
-                    #OGM_dopr_init_depth,
-                    #OGM_cpom_init_depth,
                     PHY_CYANOPCH1_init_depth,
                     PHY_CYANONPCH2_init_depth,
                     PHY_CHLOROPCH3_init_depth,
-                    PHY_DIATOMPCH4_init_depth)
+                    PHY_DIATOMPCH4_init_depth,
+                    ZOO_COPEPODS1_init_depth,
+                    ZOO_DAPHNIABIG2_init_depth,
+                    ZOO_DAPHNIASMALL3_init_depth)
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   update_var(wq_init_vals,'wq_init_vals',workingGLM)
   update_var(num_wq_vars,'num_wq_vars',workingGLM)
   update_var(nlayers_init,'num_depths',workingGLM)
   update_var(the_depths_init,'the_depths',workingGLM)
-  
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
-  
   update_var(sw_factor,'sw_factor',workingGLM)
   update_var(lw_factor,'lw_factor',workingGLM)
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
-    nstates <- nlayers_init*(1+num_wq) + num_pars
+    nstates <- nlayers_init*(1+num_wq_vars) + num_pars
   }else{
     nstates <- nlayers_init + num_pars
   }
@@ -375,12 +430,14 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
   if(include_wq){
     obs_index <- rep(NA,length(TempObservedDepths)+length(DoObservedDepths))
+    #THIS IS NOT GENERAL - IT IS SPECIFIC TO THE SET OF SENSOR WE HAVE
     for(i in 1:length(TempObservedDepths)){
       obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
     }
     for(i in 1:length(DoObservedDepths)){
       obs_index[length(TempObservedDepths)+i] <- length(the_depths_init) + which.min(abs(the_depths_init - DoObservedDepths[i]))
     }
+    #INSERT OTHER OBSERVATIONS
   }else{
     obs_index <- rep(NA,length(TempObservedDepths))
     for(i in 1:length(TempObservedDepths)){
@@ -393,8 +450,16 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #Process error 
   
-  if(USE_QT_MATRIX){
-    Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
+  Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
+  
+  if(include_wq){
+    for(i in 1:num_wq_vars){
+      for(j in 1:nlayers_init){
+        Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
+        Qt <- cbind(Qt,rep(0.0,nrow(Qt)))
+        Qt[ncol(Qt),nrow(Qt)] <- wq_var_error[i]
+      }
+    }
   }
   
   if(num_pars >0){
@@ -408,6 +473,8 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     Qt <- cbind(Qt,rep(0.0,nrow(Qt))) 
     Qt[ncol(Qt),nrow(Qt)] <- kw_init_Qt
   }
+  
+
   
   #NEED TO FIX
   psi <- rep(obs_error,length(obs_index))
@@ -427,39 +494,32 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(!restart_present){
     if(include_wq){
       x <- array(NA,dim=c(nsteps,nmembers,nstates))
-      x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,do_init), sigma=as.matrix(Qt))
-      if(NO_UNCERT){
-        for(m in 1:nmembers){
-          x[1,m,] <- c(the_temps_init,do_init)
-        }
+      if(num_pars){
+        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
+      }else{
+        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals), sigma=as.matrix(Qt))
+        #if(NO_UNCERT){
+        #  for(m in 1:nmembers){
+        #    x[1,m,] <- c(the_temps_init,do_init,wq_init_vals)
+        #  }
       }
     }else{
-      if(USE_QT_MATRIX){
-        if(num_pars){
-          x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
-        }else{
-          x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt))
-          #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
-        }
+      if(num_pars){
+        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
       }else{
-        for(m in 1:nmembers){
-          corr_temps <- the_temps_init + rnorm(1,0,temp_error) #tmp(the_depths_init)
-          corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
-          corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
-          x[1,m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
-        }
+        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt))
+        #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
       }
     }
-    if(NO_UNCERT){
-      for(m in 1:nmembers){
-        if(num_pars){
-          x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
-        }else{
-          x[1,m,] <- c(the_temps_init)
-          #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
-        }
-      }
-    }
+    #if(NO_UNCERT){
+    #  for(m in 1:nmembers){
+    #    if(num_pars){
+    #      x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
+    #    }else{
+    #      x[1,m,] <- c(the_temps_init)
+    #      #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
+    #    }
+    #  }
     if(!restart_present){
       write.csv(x[1,,],paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
     }
@@ -512,15 +572,15 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     x_corr <- array(NA, dim = c(nmembers,nstates))
     for(m in 1:nmembers){
       
-      tmp <- update_temps(curr_temps = x[i-1,m,temp_start:temp_end],the_depths_init,workingGLM)
+      tmp <- update_temps(curr_temps = round(x[i-1,m,temp_start:temp_end],3),the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
       if(num_pars > 0){
-        update_var(c(x[i-1,m,par1],x[i-1,m,par2]),'sed_temp_mean',workingGLM)
-        update_var(x[i-1,m,par3],'Kw',workingGLM)
+        update_var(c(round(x[i-1,m,par1],3),round(x[i-1,m,par2],3)),'sed_temp_mean',workingGLM)
+        update_var(round(x[i-1,m,par3],3),'Kw',workingGLM)
       }
       
       if(include_wq){
-        wq_init_vals <- c(x[i-1,wq_start[1]:wq_end[num_wq_vars]])
+        wq_init_vals <- round(c(x[i-1,m,wq_start[1]:wq_end[num_wq_vars]]),3)
         update_var(wq_init_vals,'wq_init_vals',workingGLM)
       }
       
@@ -550,28 +610,28 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         
         if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
           if(length(ncvar_get(nc_open('output.nc'),'time')) > 1){
-          if(include_wq){
-            GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
-            x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
-          }else{
-            GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
-            x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
-          }
-          x_star[m,par1] <- x[i-1,m,par1]
-          x_star[m,par2] <- x[i-1,m,par2]
-          x_star[m,par3] <- x[i-1,m,par3]
-          surface_height[i,m] <- GLM_temp_wq_out$surface_height 
-          if(length(which(is.na(x_star[m,])))==0){
-            pass = TRUE
+            if(include_wq){
+              GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
+              x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
+            }else{
+              GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
+              x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
+            }
+            x_star[m,par1] <- x[i-1,m,par1]
+            x_star[m,par2] <- x[i-1,m,par2]
+            x_star[m,par3] <- x[i-1,m,par3]
+            surface_height[i,m] <- GLM_temp_wq_out$surface_height 
+            if(length(which(is.na(x_star[m,])))==0){
+              pass = TRUE
+            }else{
+              num_reruns <- num_reruns + 1
+            }
           }else{
             num_reruns <- num_reruns + 1
           }
         }else{
           num_reruns <- num_reruns + 1
-        }else{
-          num_reruns <- num_reruns + 1
         }
-        
         if(num_reruns > 1000){
           stop(paste0('Too many re-runs (> 1000) due to NaN values in output'))
         }
