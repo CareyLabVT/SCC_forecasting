@@ -10,8 +10,12 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   PRE_SCC <- FALSE
   
   USE_OBS_CONTRAINT <- TRUE
-  NO_UNCERT <- FALSE
   
+  #SOURCES OF UNCERTAINITY
+  OBSERVATION_UNCERTAINITY <- TRUE
+  PROCESS_UNCERTAINITY <- TRUE
+  WEATHER_UNCERTAINITY <- TRUE
+  INITIAL_CONDITION_UNCERTAINITY <- TRUE
   
   #Parameters
   sw_factor <- 0.95
@@ -25,28 +29,19 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   zone2temp_init_Qt <- 0.0001
   
   #ERROR TERMS
+  if(OBSERVATION_UNCERTAINITY){
   obs_error <- 0.0001 #NEED TO FIX
-  thermo_depth_error <- 0.15
-  temp_error <- 0.5
-  b <- 0.5  #0 = error is distributed to observed states, 1 = error is distributed to unobserved states
-  alpha <- 0.5
-  
+  }else{
+    obs_error <- 0.0001 #NEED TO FIX    
+  }
+
   ####################################################
   #### YOU WON'T NEED TO MODIFY ANYTHING BELOW HERE ##
   ####################################################
   
   # SET UP NUMBER OF ENSEMBLE MEMBERS
   nMETmembers <- 21
-  if(is.na(nEnKFmembers) & is.na(restart_file)){ 
-    nEnKFmembers <- 50
-    nmembers <- nEnKFmembers*nMETmembers
-  }else if(!is.na(restart_file)){
-    nc <- nc_open(restart_file)
-    nmembers <- length(ncvar_get(nc,'ens'))
-    nc_close(nc)
-  }else{
-    nmembers <- nEnKFmembers*nMETmembers
-  }
+  nmembers <- nEnKFmembers*nMETmembers
   
   ###DETECT THE PLATFORM###
   
@@ -474,7 +469,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     Qt[ncol(Qt),nrow(Qt)] <- kw_init_Qt
   }
   
-
+  
   
   #NEED TO FIX
   psi <- rep(obs_error,length(obs_index))
@@ -494,43 +489,68 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   if(!restart_present){
     if(include_wq){
       x <- array(NA,dim=c(nsteps,nmembers,nstates))
-      if(num_pars){
+      if(num_pars > 0){
         x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
+        if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          for(m in 1:nmembers){
+            x[1,m,] <- c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init)
+          }
+        }
       }else{
         x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals), sigma=as.matrix(Qt))
-        #if(NO_UNCERT){
-        #  for(m in 1:nmembers){
-        #    x[1,m,] <- c(the_temps_init,do_init,wq_init_vals)
-        #  }
+        if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          for(m in 1:nmembers){
+            x[1,m,] <- c(the_temps_init,do_init,wq_init_vals)
+          }
+        }
       }
     }else{
-      if(num_pars){
+      if(num_pars > 0){
         x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
+        if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          for(m in 1:nmembers){
+            x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
+          }
+        }
       }else{
         x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt))
-        #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
+        if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          for(m in 1:nmembers){
+            if(num_pars > 0){
+              x[1,m,] <- c(the_temps_init)
+            }
+          }
+        }
       }
     }
-    #if(NO_UNCERT){
-    #  for(m in 1:nmembers){
-    #    if(num_pars){
-    #      x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
-    #    }else{
-    #      x[1,m,] <- c(the_temps_init)
-    #      #x[1,,par1] <- rlnorm(n=nmembers, mean = kw_init, sigma = 0.005)
-    #    }
-    #  }
-    if(!restart_present){
-      write.csv(x[1,,],paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
-    }
+    write.csv(x[1,,],paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
   }
   
   #THIS ALLOWS THE EnKF TO BE RESTARTED FROM YESTERDAY'S RUN
   if(restart_present){
     print('Using restart file')
     nc <- nc_open(restart_file)
-    x_previous <- ncvar_get(nc, "x_restart")
+    restart_nmembers <- length(ncvar_get(nc,'ens'))
+    if(restart_nmembers > nmembers){
+      #sample restart_nmembers
+      sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=FALSE)
+      restart_x_previous <- ncvar_get(nc, "x_restart")
+      x_previous <- restart_x_previous[sampled_nmembers,]
+    }else if(restart_nmembers < nmembers){
+      sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=TRUE)
+      restart_x_previous <- ncvar_get(nc, "x_restart")
+      x_previous <- restart_x_previous[sampled_nmembers,]
+    }else{
+      x_previous <- ncvar_get(nc, "x_restart")   
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+        x_previous_1 <- ncvar_get(nc, "x_restart") 
+        for(m in 1:nmembers){
+          x_previous[1,m,] <- x_previous_1[1,]
+        }
+      }
+    }
     Qt <- ncvar_get(nc, "Qt_restart")
+    nc_close(nc)
   }else{
     x_previous <- read.csv(paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
   }
@@ -639,7 +659,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       
       #INCREMENT THE MET_INDEX TO MOVE TO THE NEXT NOAA ENSEMBLE
       met_index = met_index + 1
-      if(met_index > nMETmembers){
+      if(met_index > nMETmembers | WEATHER_UNCERTAINITY == FALSE){
         met_index <- 1
       }
       
@@ -696,7 +716,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       #if no observations at a time step then just propogate model uncertainity
       if(length(z_index) == 0 | i > (hist_days+1)){
         x[i,,] <- x_corr
-        if(NO_UNCERT){
+        if(PROCESS_UNCERTAINITY == FALSE){
           x[i,,] <- x_star
         }
         
