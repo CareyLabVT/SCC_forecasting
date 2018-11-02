@@ -16,14 +16,15 @@ Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
 start_day <- '2018-09-18 00:00:00'
-forecast_start_day <- '2018-08-20 00:00:00'
+forecast_start_day <- '2018-09-20 00:00:00'
 spin_up_days <- 0
-num_forecast_days <- NA  #Set to NA if running into future
-init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
+num_forecast_days <- 1  #Set to NA if running into future
+init_restart_file <- NA #'/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
 wait_time <- 60*10
 push_to_git <- FALSE
 reference_tzone <- 'GMT'
-nEnKFmembers <- 50
+nEnKFmembers <- 21
+include_wq <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -35,7 +36,7 @@ if(is.na(init_restart_file)){
   
   #FIRST DAY
   out <- run_forecast(
-    first_day = start_day,
+    start_day = start_day,
     sim_name = sim_name, 
     hist_days = hist_days-1,
     forecast_days = 0,
@@ -45,7 +46,8 @@ if(is.na(init_restart_file)){
     forecast_location = forecast_location,
     push_to_git=push_to_git,
     data_location = data_location,
-    nEnKFmembers = nEnKFmembers
+    nEnKFmembers = nEnKFmembers,
+    include_wq = include_wq
   )
   
   plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
@@ -103,7 +105,7 @@ repeat{
   start_day <- paste0(strftime(start_day,format = "%Y-%m-%d",usetz = FALSE)," 00:00:00")
   
   out <- run_forecast(
-    first_day= start_day,
+    start_day= start_day,
     sim_name = sim_name, 
     hist_days = 1,
     forecast_days = 15,
@@ -113,7 +115,8 @@ repeat{
     forecast_location = forecast_location,
     push_to_git=push_to_git,
     data_location = data_location,
-    nEnKFmembers = nEnKFmembers
+    nEnKFmembers = nEnKFmembers,
+    include_wq = include_wq
   )
   forecast_day_count <- forecast_day_count + 1
   

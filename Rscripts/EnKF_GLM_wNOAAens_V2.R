@@ -1,8 +1,17 @@
-run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_days = 1,forecast_days = 15,  spin_up_days = 0,
-                       restart_file = NA, Folder, forecast_location = NA,push_to_git=FALSE,data_location = NA, nEnKFmembers = NA){
+run_forecast<-function(start_day= '2018-07-06 00:00:00', 
+                       sim_name = NA, 
+                       hist_days = 1,
+                       forecast_days = 15,  
+                       spin_up_days = 0,
+                       restart_file = NA,
+                       Folder, 
+                       forecast_location = NA,
+                       push_to_git=FALSE,
+                       data_location = NA, 
+                       nEnKFmembers = NA,
+                       include_wq = FALSE){
   
   ###RUN OPTIONS
-  include_wq <- FALSE
   num_pars <- 3
   
   USE_QT_MATRIX <- TRUE
@@ -30,11 +39,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   
   #ERROR TERMS
   if(OBSERVATION_UNCERTAINITY){
-  obs_error <- 0.0001 #NEED TO FIX
+    obs_error <- 0.0001 #NEED TO FIX
   }else{
     obs_error <- 0.0001 #NEED TO FIX    
   }
-
+  
   ####################################################
   #### YOU WON'T NEED TO MODIFY ANYTHING BELOW HERE ##
   ####################################################
@@ -62,7 +71,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   # so that they directly interface with the NOAA forecast
   # The output is converted back to local time before being saved
   
-  begin_sim  <- as.POSIXct(first_day,tz = reference_tzone)
+  begin_sim  <- as.POSIXct(start_day,tz = reference_tzone)
   total_days <- hist_days + forecast_days
   end_sim <- begin_sim + total_days*24*60*60
   start_forecast_step <- hist_days
@@ -101,11 +110,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
   source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   source(paste0(Folder,'/','Rscripts/write_forecast_netcdf.R')) 
-  ###SHARED GLM LIBRARIES
-  #Sys.setenv(DYLD_FALLBACK_LIBRARY_PATH= paste(pathGLM,'/glm_lib_files/',sep=''))
-  #Sys.setenv(PATH='/opt/local/bin:/opt/local/sbin:/Users/quinn/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/local/bin')
-  #system(paste('export DYLD_FALLBACK_LIBRARY_PATH=~',pathGLM,'/glm_lib_files:$DYLD_FALLBACK_LIBRARY_PATH',sep=''))
-  
+
   ###SET FILE NAMES
   forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
   catwalk_fname <-  paste0(workingGLM,'/','Catwalk.csv')
@@ -213,10 +218,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   OGM_pon_init <- 8.3
   OGM_dop_init <- 1.5
   OGM_pop_init <- 8.3
-  OGM_docr_init <- 350.00
-  OGM_donr_init <- 13.0
-  OGM_dopr_init <- 3.0
-  OGM_cpom_init <- 100.00
   PHY_CYANOPCH1_init <- 2.0
   PHY_CYANONPCH2_init <-2.0
   PHY_CHLOROPCH3_init <-2.0
@@ -225,31 +226,27 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   ZOO_DAPHNIABIG2_init <- 4.3
   ZOO_DAPHNIASMALL3_init <- 40
   
-  OXY_oxy_error <- 0.001
-  CAR_pH_error <- 0.001
-  CAR_dic_error <- 0.001
-  CAR_ch4_error <- 0.001
-  SIL_rsi_error <- 0.001
-  NIT_amm_error <- 0.001
-  NIT_nit_error <- 0.001
-  PHS_frp_error <- 0.001
-  OGM_doc_error <- 0.001
-  OGM_poc_error <- 0.001
-  OGM_don_error <- 0.001
-  OGM_pon_error <- 0.001
-  OGM_dop_error <- 0.001
-  OGM_pop_error <- 0.001
-  OGM_docr_error <- 0.001
-  OGM_donr_error <- 0.001
-  OGM_dopr_error <- 0.001
-  OGM_cpom_error <- 0.001
-  PHY_CYANOPCH1_error <- 0.001
-  PHY_CYANONPCH2_error <-0.001
-  PHY_CHLOROPCH3_error <-0.001
-  PHY_DIATOMPCH4_error <- 0.001
-  ZOO_COPEPODS1_error <- 0.001
-  ZOO_DAPHNIABIG2_error <- 0.001
-  ZOO_DAPHNIASMALL3_error <- 0.001
+  OXY_oxy_error <- OXY_oxy_init*0.001
+  CAR_pH_error <- CAR_pH_init*0.001
+  CAR_dic_error <- CAR_dic_init*0.001
+  CAR_ch4_error <- CAR_ch4_init*0.001
+  SIL_rsi_error <- SIL_rsi_init*0.001
+  NIT_amm_error <- NIT_amm_init*0.001
+  NIT_nit_error <- NIT_nit_init*0.001
+  PHS_frp_error <- PHS_frp_init*0.001
+  OGM_doc_error <- OGM_doc_init*0.001
+  OGM_poc_error <- OGM_poc_init*0.001
+  OGM_don_error <- OGM_don_init*0.001
+  OGM_pon_error <- OGM_pon_init*0.001
+  OGM_dop_error <- OGM_dop_init*0.001
+  OGM_pop_error <- OGM_pop_init*0.001
+  PHY_CYANOPCH1_error <- PHY_CYANOPCH1_init*0.001
+  PHY_CYANONPCH2_error <-PHY_CYANONPCH2_init*0.001
+  PHY_CHLOROPCH3_error <-PHY_CHLOROPCH3_init*0.001
+  PHY_DIATOMPCH4_error <- PHY_DIATOMPCH4_init*0.001
+  ZOO_COPEPODS1_error <- ZOO_COPEPODS1_init*0.001
+  ZOO_DAPHNIABIG2_error <- ZOO_DAPHNIABIG2_init*0.001
+  ZOO_DAPHNIASMALL3_error <- ZOO_DAPHNIASMALL3_init*0.001
   
   wq_var_error <- c(OXY_oxy_error,
                     CAR_pH_error,CAR_dic_error,CAR_ch4_error,
@@ -278,8 +275,11 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     #PROCESS DO OBSERVATIONS
     DoObservedDepths <- c(1,5,9)
     obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    #mg/L (obs units) -> mol/m3 (glm units)
-    obs_do$obs <- obs_do$obs*32/1000
+    obs_do$obs <- obs_do$obs*32/1000  #mg/L (obs units) -> mol/m3 (glm units)
+    init_do1 <- obs_do$obs[1,]
+    
+    Chla_fDOM_ObservedDepths <- 1
+    obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
     
   }else{
     fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
@@ -298,6 +298,10 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     }
     temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
     the_temps_init <- temp_inter(the_depths_init)
+    if(include_wq){
+      do_inter <- approxfun(DoObservedDepths,init_do1,rule=2)
+      do_init <- do_inter(the_depths_init) 
+    }
   }
   
   #SET UP INITIAL CONDITIONS
@@ -342,7 +346,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
   }
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
-  OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)
+  OXY_oxy_init_depth <- do_init #rep(OXY_oxy_init,nlayers_init)
   CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init)
   CAR_dic_init_depth <- rep(CAR_dic_init,nlayers_init)
   CAR_ch4_init_depth <- rep(CAR_ch4_init,nlayers_init)
@@ -536,16 +540,28 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=FALSE)
       restart_x_previous <- ncvar_get(nc, "x_restart")
       x_previous <- restart_x_previous[sampled_nmembers,]
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+        x_previous_1 <- colMeans(x_previous)
+        for(m in 1:nmembers){
+          x_previous[m,] <- x_previous_1
+        }
+      }
     }else if(restart_nmembers < nmembers){
       sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=TRUE)
       restart_x_previous <- ncvar_get(nc, "x_restart")
       x_previous <- restart_x_previous[sampled_nmembers,]
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+        x_previous_1 <- colMeans(x_previous)
+        for(m in 1:nmembers){
+          x_previous[m,] <- x_previous_1
+        }
+      }
     }else{
       x_previous <- ncvar_get(nc, "x_restart")   
       if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
-        x_previous_1 <- ncvar_get(nc, "x_restart") 
+        x_previous_1 <- colMeans(x_previous) 
         for(m in 1:nmembers){
-          x_previous[1,m,] <- x_previous_1[1,]
+          x_previous[m,] <- x_previous_1
         }
       }
     }
@@ -618,7 +634,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         }
       }
       
-      #3) Use GLM NML files to run GLM for a day
+      #Use GLM NML files to run GLM for a day
       # Only allow simulations without NaN values in the output to proceed.  Necessary due to random
       # Nan in AED output
       pass <- FALSE
@@ -628,8 +644,9 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         unlink(paste0(workingGLM,'/output.nc')) 
         system(paste0(workingGLM,'/','glm'))
         
-        if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc_open('output.nc'))){
-          if(length(ncvar_get(nc_open('output.nc'),'time')) > 1){
+        if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc<-nc_open('output.nc'))){
+          if(length(ncvar_get(nc,'time')) > 1){
+            nc_close(nc)
             if(include_wq){
               GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
               x_star[m,1:(nstates-num_pars)] <- c(GLM_temp_wq_out$output)
@@ -706,6 +723,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
       }
       x_corr <- x_star + NQt
     }
+    for(m in 1:nmembers){
+      for(wq in 1:num_wq_vars){
+      index <- which(x_corr[m,] < 0.0)
+      index <- index[which(index > wq_start[1])]
+      x_corr[m,index] <- 0.0
+      }
+    }
     
     x_prior[i,,] <- x_corr
     
@@ -719,7 +743,6 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         if(PROCESS_UNCERTAINITY == FALSE){
           x[i,,] <- x_star
         }
-        
       }else{
         #if observation then calucate Kalman adjustment
         zt <- z[i,z_index]
@@ -772,6 +795,17 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
         #Update states array (transposes are necessary to convert between the dims here and the dims in the EnKF formulations)
         x[i,,] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
         
+        for(m in 1:nmembers){
+          for(wq in 1:num_wq_vars){
+            index <- which(x[i,m,] < 0.0)
+            index <- index[which(index > wq_start[1])]
+            x[i,m,index] <- 0.0
+          }
+        }
+        
+        if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          x[i,,] <- x_star
+        }
         if(length(which(is.na(x[i,,]))) > 0){dies = i}
       }
     }else{
@@ -806,7 +840,13 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
                         Qt_restart = Qt_restart,
                         time_of_forecast = time_of_forecast,
                         hist_days = hist_days,
-                        x_prior)
+                        x_prior,
+                        include_wq,
+                        wq_start,
+                        wq_end,
+                        par1,
+                        par2,
+                        par3)
   
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,
