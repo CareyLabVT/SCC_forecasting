@@ -16,15 +16,15 @@ Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
 start_day <- '2018-09-18 00:00:00'
-forecast_start_day <- '2018-09-22 00:00:00'
+forecast_start_day <- '2018-09-30 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- 1  #Set to NA if running into future
 init_restart_file <- NA #'/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
 wait_time <- 60*10
 push_to_git <- FALSE
 reference_tzone <- 'GMT'
-nEnKFmembers <- 21
-include_wq <- TRUE
+nEnKFmembers <- 50
+include_wq <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))

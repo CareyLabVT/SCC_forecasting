@@ -65,14 +65,12 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   forecasted <- ncvar_get(nc,'forecasted')
   if(include_wq){
     OXY_oxy <- ncvar_get(nc,'OXY_oxy')
+    PHY_CYANOPCH1 <- ncvar_get(nc,'PHY_CYANOPCH1')
   }
   
   nsteps <- length(full_time)
   forecast_index <- which(forecasted == 1)[1]
   nlayers <- length(depths)
-  
-  
-  
   
   if(include_wq){
     nobs <- length(TempObservedDepths) + length(DoObservedDepths)
@@ -113,8 +111,8 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   #print(full_time_day)
   #print(z[1,])
   nMETmembers =21
-  pdf(paste0(save_location,'/',pdf_file_name),width = 12, height = 5)
-  par(mfrow=c(2,3))
+  pdf(paste0(save_location,'/',pdf_file_name),width = 12, height = 12)
+  par(mfrow=c(4,3))
   
   for(i in 1:nlayers){
     model = i
@@ -148,7 +146,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   }
   
   if(include_wq){
-    par(mfrow=c(2,3))
+    par(mfrow=c(4,3))
     
     for(i in 1:nlayers){
       model = i
@@ -170,8 +168,7 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
           points(as.POSIXct(full_time_day),OXY_oxy[,m,model],type='l')
         }
       }
-    print(z)
-    print(obs)
+
     if(!is.na(obs)){
       tmp = z[,obs]
       tmp[is.na(tmp)] = -999
@@ -180,6 +177,39 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     
     abline(v = as.POSIXct(full_time_day[forecast_index]))
     #}
+    }
+    
+    par(mfrow=c(4,3))
+    
+    for(i in 1:nlayers){
+      model = i
+      if(length(which(z_states[1,] == length(the_depths_init)+i) > 0)){
+        obs = which(z_states[1,] == length(the_depths_init)+i)
+      }else{
+        obs = NA
+      }
+      ylim = range(c(PHY_CYANOPCH1[,,]),na.rm = TRUE) 
+      #ylim = range(c(temp_mean[,model],temp_upper[,model],temp_lower[,model],c(z[,obs])),na.rm = TRUE)
+      #if(plot_summaries){
+      #  plot(as.POSIXct(full_time_day),temp_mean[,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
+      #  points(as.POSIXct(full_time_day),temp_upper[,model],type='l',lty='dashed')
+      #  points(as.POSIXct(full_time_day),temp_lower[,model],type='l',lty='dashed')
+      #}else{
+      plot(as.POSIXct(full_time_day),PHY_CYANOPCH1[,1,model],type='l',ylab='Oxygen (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
+      if(length(temp[1,,model]) > 1){
+        for(m in 2:length(temp[1,,model])){
+          points(as.POSIXct(full_time_day),PHY_CYANOPCH1[,m,model],type='l')
+        }
+      }
+
+#      if(!is.na(obs)){
+#        tmp = z[,obs]
+#        tmp[is.na(tmp)] = -999
+#        points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
+#      }
+      
+      abline(v = as.POSIXct(full_time_day[forecast_index]))
+      #}
     }
   }
 
@@ -193,7 +223,7 @@ plot(rowMeans(zone2temp[,]),xlab ='time step (day)',ylab = 'Zone 2 sediment temp
 
 
 ###PLOT HISTOGRAMS OF FORECAST
-par(mfrow=c(2,3))
+par(mfrow=c(4,3))
 if(!is.na(forecast_index)){
   if(length(which(forecast_index == 1)) > 6){
     xlim<- range(c(temp[forecast_index+7,,obs_index[1]],z[forecast_index,1]),na.rm = TRUE)

@@ -30,12 +30,17 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   sw_factor <- 0.95
   lw_factor <- 0.95
   lake_depth_init <- 9.4  #not a modeled state
-  kw_init <- 0.87
-  kw_init_Qt <- 0.00000001
   zone2_temp <- 17
   zone1_temp <- 11
   zone1temp_init_Qt <- 0.0001
   zone2temp_init_Qt <- 0.0001
+  if(include_wq){
+    kw_init <- 0.1
+    kw_init_Qt <- 0.00000000001
+  }else{
+    kw_init <- 0.87
+    kw_init_Qt <- 0.00000001
+  }
   
   #ERROR TERMS
   if(OBSERVATION_UNCERTAINITY){
@@ -110,7 +115,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
   source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   source(paste0(Folder,'/','Rscripts/write_forecast_netcdf.R')) 
-
+  
   ###SET FILE NAMES
   forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
   catwalk_fname <-  paste0(workingGLM,'/','Catwalk.csv')
@@ -346,7 +351,11 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   }
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
-  OXY_oxy_init_depth <- do_init #rep(OXY_oxy_init,nlayers_init)
+  if(include_wq){
+    OXY_oxy_init_depth <- do_init #rep(OXY_oxy_init,nlayers_init)
+  }else{
+    OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)    
+  }
   CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init)
   CAR_dic_init_depth <- rep(CAR_dic_init,nlayers_init)
   CAR_ch4_init_depth <- rep(CAR_ch4_init,nlayers_init)
@@ -391,8 +400,13 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                     ZOO_DAPHNIASMALL3_init_depth)
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
-  update_var(wq_init_vals,'wq_init_vals',workingGLM)
-  update_var(num_wq_vars,'num_wq_vars',workingGLM)
+  if(include_wq){
+    update_var(wq_init_vals,'wq_init_vals',workingGLM)
+    update_var(num_wq_vars,'num_wq_vars',workingGLM)
+  }else{
+    update_var(' ','wq_init_vals',workingGLM)
+    update_var(0,'num_wq_vars',workingGLM)
+  }
   update_var(nlayers_init,'num_depths',workingGLM)
   update_var(the_depths_init,'the_depths',workingGLM)
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
@@ -723,11 +737,13 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       }
       x_corr <- x_star + NQt
     }
-    for(m in 1:nmembers){
-      for(wq in 1:num_wq_vars){
-      index <- which(x_corr[m,] < 0.0)
-      index <- index[which(index > wq_start[1])]
-      x_corr[m,index] <- 0.0
+    if(include_wq){
+      for(m in 1:nmembers){
+        for(wq in 1:num_wq_vars){
+          index <- which(x_corr[m,] < 0.0)
+          index <- index[which(index > wq_start[1])]
+          x_corr[m,index] <- 0.0
+        }
       }
     }
     
@@ -795,11 +811,13 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         #Update states array (transposes are necessary to convert between the dims here and the dims in the EnKF formulations)
         x[i,,] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
         
-        for(m in 1:nmembers){
-          for(wq in 1:num_wq_vars){
-            index <- which(x[i,m,] < 0.0)
-            index <- index[which(index > wq_start[1])]
-            x[i,m,index] <- 0.0
+        if(include_wq){
+          for(m in 1:nmembers){
+            for(wq in 1:num_wq_vars){
+              index <- which(x[i,m,] < 0.0)
+              index <- index[which(index > wq_start[1])]
+              x[i,m,index] <- 0.0
+            }
           }
         }
         
