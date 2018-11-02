@@ -17,6 +17,9 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   #include_wq <- FALSE
   #data_location <- '/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data'
   if(!PRE_SCC){
+    
+    the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
+    
     mia_location <- paste0(data_location,'/','mia-data')
     setwd(mia_location)
     system(paste0('git pull'))
@@ -32,7 +35,15 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
       }
     }
     TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+    
+    #PROCESS DO OBSERVATIONS
     DoObservedDepths <- c(1,5,9)
+    obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
+    obs_do$obs <- obs_do$obs*32/1000  #mg/L (obs units) -> mol/m3 (glm units)
+    init_do1 <- obs_do$obs[1,]
+    
+    Chla_fDOM_ObservedDepths <- 1
+    obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
   }else{
     the_depths_init <- c(0.1, 0.33, 0.66, 1.00, 1.33,1.66,2.00,2.33,2.66,3.0,3.33,3.66,4.0,4.33,4.66,5.0,5.33,5.66,6.0,6.33,6.66,7.00,7.33,7.66,8.0,8.33,8.66,9.00,9.33)
     fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
@@ -52,6 +63,9 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   zone1temp <- ncvar_get(nc,'zone1temp')
   zone2temp <- ncvar_get(nc,'zone2temp')
   forecasted <- ncvar_get(nc,'forecasted')
+  if(include_wq){
+    OXY_oxy <- ncvar_get(nc,'OXY_oxy')
+  }
   
   nsteps <- length(full_time)
   forecast_index <- which(forecasted == 1)[1]
@@ -79,19 +93,20 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
   #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
   if(include_wq){
     obs_index <- rep(NA,length(TempObservedDepths)+length(DoObservedDepths))
+    #THIS IS NOT GENERAL - IT IS SPECIFIC TO THE SET OF SENSOR WE HAVE
     for(i in 1:length(TempObservedDepths)){
-      obs_index[i] <- which.min(abs(depths - TempObservedDepths[i]))
+      obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
     }
     for(i in 1:length(DoObservedDepths)){
-      obs_index[length(TempObservedDepths)+i] <- length(depths) + which.min(abs(depths - DoObservedDepths[i]))
+      obs_index[length(TempObservedDepths)+i] <- length(the_depths_init) + which.min(abs(the_depths_init - DoObservedDepths[i]))
     }
+    #INSERT OTHER OBSERVATIONS
   }else{
     obs_index <- rep(NA,length(TempObservedDepths))
     for(i in 1:length(TempObservedDepths)){
-      obs_index[i] <- which.min(abs(depths - TempObservedDepths[i]))
+      obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
     } 
   }
-  
   #Matrix for knowing which state the observation corresponds to
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
@@ -132,46 +147,85 @@ plot_forecast_netcdf <- function(pdf_file_name,output_file,catwalk_fname,include
     #}
   }
   
-  ###PLOT OF PARAMETERS IF FIT
-  plot(rowMeans(Kw[,]),xlab ='time step (day)',ylab = 'Kw parameter')
-  plot(rowMeans(zone1temp[,]),xlab ='time step (day)',ylab = 'Zone 1 sediment temp')
-  plot(rowMeans(zone2temp[,]),xlab ='time step (day)',ylab = 'Zone 2 sediment temp')
-  
-  
-  ###PLOT HISTOGRAMS OF FORECAST
-  par(mfrow=c(2,3))
-  if(!is.na(forecast_index)){
-    if(length(which(forecast_index == 1)) > 6){
-      xlim<- range(c(temp[forecast_index+7,,obs_index[1]],z[forecast_index,1]),na.rm = TRUE)
-      hist(temp[forecast_index+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= z[forecast_index+7,1],col='red')
-      xlim<- range(c(temp[forecast_index+7,,obs_index[5]],z[forecast_index+7,5]),na.rm = TRUE)
-      hist(temp[forecast_index+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= z[forecast_index+7,5],col='red')
-      xlim<- range(c(temp[forecast_index+7,,obs_index[10]],z[forecast_index+7,10]),na.rm = TRUE)
-      hist(temp[forecast_index+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= z[forecast_index+7,10],col='red')
+  if(include_wq){
+    par(mfrow=c(2,3))
+    
+    for(i in 1:nlayers){
+      model = i
+      if(length(which(z_states[1,] == length(the_depths_init)+i) > 0)){
+        obs = which(z_states[1,] == length(the_depths_init)+i)
+      }else{
+        obs = NA
+      }
+      ylim = range(c(OXY_oxy[,,]),na.rm = TRUE) 
+      #ylim = range(c(temp_mean[,model],temp_upper[,model],temp_lower[,model],c(z[,obs])),na.rm = TRUE)
+      #if(plot_summaries){
+      #  plot(as.POSIXct(full_time_day),temp_mean[,model],type='l',ylab='water temperature (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
+      #  points(as.POSIXct(full_time_day),temp_upper[,model],type='l',lty='dashed')
+      #  points(as.POSIXct(full_time_day),temp_lower[,model],type='l',lty='dashed')
+      #}else{
+      plot(as.POSIXct(full_time_day),OXY_oxy[,1,model],type='l',ylab='Oxygen (celsius)',xlab='time step (day)',main = paste('depth: ',depths[i],' m',sep=''),ylim=ylim)
+      if(length(temp[1,,model]) > 1){
+        for(m in 2:length(temp[1,,model])){
+          points(as.POSIXct(full_time_day),OXY_oxy[,m,model],type='l')
+        }
+      }
+    print(z)
+    print(obs)
+    if(!is.na(obs)){
+      tmp = z[,obs]
+      tmp[is.na(tmp)] = -999
+      points(as.POSIXct(full_time_day),tmp,col='red',pch=19,cex=1.0)
     }
-    if(length(which(forecast_index == 1)) > 13){
-      xlim<- range(c(temp[forecast_index+14,,obs_index[1]],z[forecast_index+14,1]),na.rm = TRUE)
-      hist(temp[forecast_index+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= z[forecast_index+14,1],col='red')
-      xlim<- range(c(temp[forecast_index+14,,obs_index[5]],z[forecast_index+14,5]),na.rm = TRUE)
-      hist(temp[forecast_index+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= temp[forecast_index+14,5],col='red')
-      xlim<- range(c(temp[forecast_index+14,,obs_index[10]],z[forecast_index+14,10]),na.rm = TRUE)
-      hist(temp[forecast_index+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
-      abline(v= z[forecast_index+14,10],col='red')
+    
+    abline(v = as.POSIXct(full_time_day[forecast_index]))
+    #}
     }
   }
-  
-  #par(mfrow=c(3,5))
-  #for(i in 3:17){
-  #  xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
-  #  prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
-  #  plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
-  #}
-  
-  dev.off()
+
+
+
+
+###PLOT OF PARAMETERS IF FIT
+plot(rowMeans(Kw[,]),xlab ='time step (day)',ylab = 'Kw parameter')
+plot(rowMeans(zone1temp[,]),xlab ='time step (day)',ylab = 'Zone 1 sediment temp')
+plot(rowMeans(zone2temp[,]),xlab ='time step (day)',ylab = 'Zone 2 sediment temp')
+
+
+###PLOT HISTOGRAMS OF FORECAST
+par(mfrow=c(2,3))
+if(!is.na(forecast_index)){
+  if(length(which(forecast_index == 1)) > 6){
+    xlim<- range(c(temp[forecast_index+7,,obs_index[1]],z[forecast_index,1]),na.rm = TRUE)
+    hist(temp[forecast_index+7,,obs_index[1]],main='0.1m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[forecast_index+7,1],col='red')
+    xlim<- range(c(temp[forecast_index+7,,obs_index[5]],z[forecast_index+7,5]),na.rm = TRUE)
+    hist(temp[forecast_index+7,,obs_index[5]],main='4m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[forecast_index+7,5],col='red')
+    xlim<- range(c(temp[forecast_index+7,,obs_index[10]],z[forecast_index+7,10]),na.rm = TRUE)
+    hist(temp[forecast_index+7,,obs_index[10]],main='9m temp. 7 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[forecast_index+7,10],col='red')
+  }
+  if(length(which(forecast_index == 1)) > 13){
+    xlim<- range(c(temp[forecast_index+14,,obs_index[1]],z[forecast_index+14,1]),na.rm = TRUE)
+    hist(temp[forecast_index+14,,obs_index[1]],main='0.1m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[forecast_index+14,1],col='red')
+    xlim<- range(c(temp[forecast_index+14,,obs_index[5]],z[forecast_index+14,5]),na.rm = TRUE)
+    hist(temp[forecast_index+14,,obs_index[5]],main='4m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= temp[forecast_index+14,5],col='red')
+    xlim<- range(c(temp[forecast_index+14,,obs_index[10]],z[forecast_index+14,10]),na.rm = TRUE)
+    hist(temp[forecast_index+14,,obs_index[10]],main='9m temp. 14 days forecast',xlab='Temperature',xlim=xlim)
+    abline(v= z[forecast_index+14,10],col='red')
+  }
+}
+
+#par(mfrow=c(3,5))
+#for(i in 3:17){
+#  xlim = range(c(temp[,,obs_index[1]] - temp[,,obs_index[9]]))
+#  prob_zero = length(which(temp[i,,obs_index[1]] - temp[i,,obs_index[9]] < 1))/length((temp[i,,obs_index[1]]))
+#  plot(density(temp[i,,obs_index[1]] - temp[i,,obs_index[9]]), main = paste0(month(full_time_day[i]),'-',day(full_time_day[i]),' (Tover = ',prob_zero*100, '% chance)'),xlab = '1 m - 8 m temperature',xlim=xlim)
+#}
+
+dev.off()
 }
 

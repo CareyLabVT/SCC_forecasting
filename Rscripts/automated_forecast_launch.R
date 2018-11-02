@@ -16,7 +16,7 @@ Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
 start_day <- '2018-09-18 00:00:00'
-forecast_start_day <- '2018-09-20 00:00:00'
+forecast_start_day <- '2018-09-22 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- 1  #Set to NA if running into future
 init_restart_file <- NA #'/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
@@ -52,11 +52,11 @@ if(is.na(init_restart_file)){
   
   plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
                        output_file = unlist(out)[1],
-                       include_wq = FALSE,
+                       include_wq = include_wq,
                        code_location = paste0(Folder,'/Rscripts/'),
                        save_location = forecast_location,
                        data_location = data_location,
-                       plot_summaries = TRUE,
+                       plot_summaries = FALSE,
                        PRE_SCC = FALSE)
   
   #ADVANCE TO NEXT DAY
