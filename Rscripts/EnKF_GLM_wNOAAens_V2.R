@@ -280,7 +280,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     #PROCESS DO OBSERVATIONS
     DoObservedDepths <- c(1,5,9)
     obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    obs_do$obs <- obs_do$obs*32/1000  #mg/L (obs units) -> mol/m3 (glm units)
+    obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
     init_do1 <- obs_do$obs[1,]
     
     Chla_fDOM_ObservedDepths <- 1

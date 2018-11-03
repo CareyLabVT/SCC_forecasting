@@ -24,7 +24,7 @@ wait_time <- 60*10
 push_to_git <- FALSE
 reference_tzone <- 'GMT'
 nEnKFmembers <- 50
-include_wq <- FALSE
+include_wq <- TRUE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
