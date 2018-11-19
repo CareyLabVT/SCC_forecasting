@@ -28,6 +28,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- TRUE
     WEATHER_UNCERTAINITY <- TRUE
     INITIAL_CONDITION_UNCERTAINITY <- TRUE
+    PARAMETER_UNCERTAINITY <- TRUE
   }else if(uncert_mode == 2){
     #No sources of uncertainity and no data used to constrain 
     USE_OBS_CONTRAINT <- TRUE
@@ -36,6 +37,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- FALSE
     WEATHER_UNCERTAINITY <- FALSE
     INITIAL_CONDITION_UNCERTAINITY <- FALSE
+    PARAMETER_UNCERTAINITY <- FALSE
   }else if(uncert_mode == 3){
     #Only process uncertainity
     USE_OBS_CONTRAINT <- TRUE
@@ -44,6 +46,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- TRUE
     WEATHER_UNCERTAINITY <- FALSE
     INITIAL_CONDITION_UNCERTAINITY <- FALSE
+    PARAMETER_UNCERTAINITY <- FALSE
   }else if(uncert_mode == 4){
     #only weather uncertainity
     USE_OBS_CONTRAINT <- TRUE
@@ -52,6 +55,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- FALSE
     WEATHER_UNCERTAINITY <- TRUE
     INITIAL_CONDITION_UNCERTAINITY <- FALSE
+    PARAMETER_UNCERTAINITY <- FALSE
   }else if(uncert_mode == 5){
     #only initial condition uncertainity with data constraint
     USE_OBS_CONTRAINT <- TRUE
@@ -60,6 +64,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- FALSE
     WEATHER_UNCERTAINITY <- FALSE
     INITIAL_CONDITION_UNCERTAINITY <- TRUE
+    PARAMETER_UNCERTAINITY <- FALSE
   }else if(uncert_mode == 6){
     #only initial condition uncertainity without data constraint
     USE_OBS_CONTRAINT <- FALSE
@@ -68,6 +73,16 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     PROCESS_UNCERTAINITY <- FALSE
     WEATHER_UNCERTAINITY <- FALSE
     INITIAL_CONDITION_UNCERTAINITY <- TRUE
+    PARAMETER_UNCERTAINITY <- FALSE
+  }else if(uncert_mode == 6){
+    #only parameter uncertainity
+    USE_OBS_CONTRAINT <- FALSE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- FALSE
+    WEATHER_UNCERTAINITY <- FALSE
+    INITIAL_CONDITION_UNCERTAINITY <- FALSE
+    PARAMETER_UNCERTAINITY <- TRUE
   }
   
   #Parameters
@@ -725,9 +740,13 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       if(num_pars > 0){
         if(i > (hist_days+1)){
           new_pars <- x[i-1,m,(nstates+1):(nstates+num_pars)]
+          if(!PARAMETER_UNCERTAINITY){
+            new_pars <- mean(x[i-1,,(nstates+1):(nstates+num_pars)])
+          }
         }else{
           new_pars <- rmvnorm(n=1, mean = c(x[i-1,m,(nstates+1):(nstates+num_pars)]),sigma=as.matrix(Qt_pars))
         }
+        
         update_var(c(round(new_pars[1],3),round(new_pars[2],3)),'sed_temp_mean',workingGLM)
         update_var(round(new_pars[3],3),'sw_factor',workingGLM)
         update_var(round(new_pars[3],3),'lw_factor',workingGLM)
