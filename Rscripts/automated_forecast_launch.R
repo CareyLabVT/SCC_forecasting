@@ -11,20 +11,21 @@ library(lubridate)
 library(RCurl)
 library(testit)
 
-sim_name <- 'test' #FCR_betaV2'
+sim_name <- 'AGU_GLEON_INIT_UNCERT' #FCR_betaV2'
 Folder <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/'
 forecast_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/' 
 data_location <- '/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/' 
-start_day <- '2018-09-18 00:00:00'
-forecast_start_day <- '2018-09-30 00:00:00'
+start_day <- '2018-10-07 00:00:00'
+forecast_start_day <- '2018-10-08 00:00:00'
 spin_up_days <- 0
 num_forecast_days <- 1  #Set to NA if running into future
-init_restart_file <- NA #'/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_9_17_forecast_2018_9_18_2018918_9_24.nc'
+init_restart_file <- '/Users/quinn/Dropbox/Research/SSC_forecasting/test_forecast/FCR_betaV2_hist_2018_10_6_forecast_2018_10_7_2018107_5_50.nc'
 wait_time <- 60*10
 push_to_git <- FALSE
 reference_tzone <- 'GMT'
 nEnKFmembers <- 50
-include_wq <- TRUE
+include_wq <- FALSE
+USE_CTD <- FALSE
 
 source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
 source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
@@ -47,7 +48,9 @@ if(is.na(init_restart_file)){
     push_to_git=push_to_git,
     data_location = data_location,
     nEnKFmembers = nEnKFmembers,
-    include_wq = include_wq
+    include_wq = include_wq,
+    USE_CTD = USE_CTD,
+    uncert_mode = 1
   )
   
   plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2],'.pdf'),
@@ -57,7 +60,7 @@ if(is.na(init_restart_file)){
                        save_location = forecast_location,
                        data_location = data_location,
                        plot_summaries = FALSE,
-                       PRE_SCC = FALSE)
+                       USE_CTD = USE_CTD)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(hist_days) - days(1)
@@ -116,7 +119,8 @@ repeat{
     push_to_git=push_to_git,
     data_location = data_location,
     nEnKFmembers = nEnKFmembers,
-    include_wq = include_wq
+    include_wq = include_wq,
+    USE_CTD = USE_CTD
   )
   forecast_day_count <- forecast_day_count + 1
   
@@ -130,7 +134,9 @@ repeat{
                            data_location = data_location,
                            plot_summaries = TRUE,
                            PRE_SCC = FALSE,
-                           push_to_git=push_to_git)
+                           push_to_git=push_to_git,
+                           USE_CTD = USE_CTD,
+                           uncert_mode = 1)
   
   #ADVANCE TO NEXT DAY
   start_day <- as.POSIXct(start_day, format = "%Y-%m-%d %H:%M:%S") + days(1)

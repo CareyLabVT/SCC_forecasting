@@ -9,44 +9,86 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                        push_to_git=FALSE,
                        data_location = NA, 
                        nEnKFmembers = NA,
-                       include_wq = FALSE){
+                       include_wq = FALSE,
+                       USE_CTD = USE_CTD,
+                       uncert_mode = 1,
+                       cov_matrix = NA,
+                       alpha = 0.5){
   
   ###RUN OPTIONS
   num_pars <- 3
   
-  USE_QT_MATRIX <- TRUE
-  USE_CTD <- FALSE
   PRE_SCC <- FALSE
   
-  USE_OBS_CONTRAINT <- TRUE
-  
-  #SOURCES OF UNCERTAINITY
-  OBSERVATION_UNCERTAINITY <- TRUE
-  PROCESS_UNCERTAINITY <- TRUE
-  WEATHER_UNCERTAINITY <- TRUE
-  INITIAL_CONDITION_UNCERTAINITY <- TRUE
+  if(uncert_mode == 1){
+    #All sources of uncertainity and data used to constrain 
+    USE_OBS_CONTRAINT <- TRUE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- TRUE
+    WEATHER_UNCERTAINITY <- TRUE
+    INITIAL_CONDITION_UNCERTAINITY <- TRUE
+  }else if(uncert_mode == 2){
+    #No sources of uncertainity and no data used to constrain 
+    USE_OBS_CONTRAINT <- TRUE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- FALSE
+    WEATHER_UNCERTAINITY <- FALSE
+    INITIAL_CONDITION_UNCERTAINITY <- FALSE
+  }else if(uncert_mode == 3){
+    #Only process uncertainity
+    USE_OBS_CONTRAINT <- TRUE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- TRUE
+    WEATHER_UNCERTAINITY <- FALSE
+    INITIAL_CONDITION_UNCERTAINITY <- FALSE
+  }else if(uncert_mode == 4){
+    #only weather uncertainity
+    USE_OBS_CONTRAINT <- TRUE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- FALSE
+    WEATHER_UNCERTAINITY <- TRUE
+    INITIAL_CONDITION_UNCERTAINITY <- FALSE
+  }else if(uncert_mode == 5){
+    #only initial condition uncertainity with data constraint
+    USE_OBS_CONTRAINT <- TRUE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- FALSE
+    WEATHER_UNCERTAINITY <- FALSE
+    INITIAL_CONDITION_UNCERTAINITY <- TRUE
+  }else if(uncert_mode == 6){
+    #only initial condition uncertainity without data constraint
+    USE_OBS_CONTRAINT <- FALSE
+    #SOURCES OF UNCERTAINITY
+    OBSERVATION_UNCERTAINITY <- TRUE
+    PROCESS_UNCERTAINITY <- FALSE
+    WEATHER_UNCERTAINITY <- FALSE
+    INITIAL_CONDITION_UNCERTAINITY <- TRUE
+  }
   
   #Parameters
-  sw_factor <- 0.95
-  lw_factor <- 0.95
   lake_depth_init <- 9.4  #not a modeled state
   zone2_temp <- 17
   zone1_temp <- 11
-  zone1temp_init_Qt <- 0.0001
-  zone2temp_init_Qt <- 0.0001
+  zone1temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
+  zone2temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
   if(include_wq){
     kw_init <- 0.1
     kw_init_Qt <- 0.00000000001
   }else{
-    kw_init <- 0.87
-    kw_init_Qt <- 0.00000001
+    kw_init <- 1.0
+    kw_init_Qt <- 0.01^2 #THIS IS THE VARIANCE, NOT THE SD
   }
-  
+
   #ERROR TERMS
   if(OBSERVATION_UNCERTAINITY){
-    obs_error <- 0.0001 #NEED TO FIX
+    obs_error <- 0.0001 #NEED TO DOUBLE CHECK
   }else{
-    obs_error <- 0.0001 #NEED TO FIX    
+    obs_error <- 0.0001 #NEED TO DOUBLE CHECK   
   }
   
   ####################################################
@@ -94,9 +136,9 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
   full_time_local <- with_tz(full_time,tzone = 'EST5EDT')
   full_time <- strftime(full_time, format="%Y-%m-%d %H:%M",tz = reference_tzone)
-  full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M")
-  full_time_day <- strftime(full_time, format="%Y-%m-%d")
-  full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d")
+  full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M",tz = 'EST5EDT')
+  full_time_day <- strftime(full_time, format="%Y-%m-%d",tz = reference_tzone)
+  full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d",tz = 'EST5EDT')
   full_time_hour_obs <- seq(as.POSIXct(full_time[1],tz = reference_tzone), as.POSIXct(full_time[length(full_time)],tz = reference_tzone), by = "1 hour") # grid
   nsteps <- length(full_time)
   
@@ -231,7 +273,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   ZOO_DAPHNIABIG2_init <- 4.3
   ZOO_DAPHNIASMALL3_init <- 40
   
-  OXY_oxy_error <- OXY_oxy_init*0.001
+  OXY_oxy_error <- OXY_oxy_init*1.0
   CAR_pH_error <- CAR_pH_init*0.001
   CAR_dic_error <- CAR_dic_init*0.001
   CAR_ch4_error <- CAR_ch4_init*0.001
@@ -245,10 +287,10 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   OGM_pon_error <- OGM_pon_init*0.001
   OGM_dop_error <- OGM_dop_init*0.001
   OGM_pop_error <- OGM_pop_init*0.001
-  PHY_CYANOPCH1_error <- PHY_CYANOPCH1_init*0.001
-  PHY_CYANONPCH2_error <-PHY_CYANONPCH2_init*0.001
-  PHY_CHLOROPCH3_error <-PHY_CHLOROPCH3_init*0.001
-  PHY_DIATOMPCH4_error <- PHY_DIATOMPCH4_init*0.001
+  PHY_CYANOPCH1_error <- PHY_CYANOPCH1_init*0.01
+  PHY_CYANONPCH2_error <-PHY_CYANONPCH2_init*0.01
+  PHY_CHLOROPCH3_error <-PHY_CHLOROPCH3_init*0.01
+  PHY_DIATOMPCH4_error <- PHY_DIATOMPCH4_init*0.01
   ZOO_COPEPODS1_error <- ZOO_COPEPODS1_init*0.001
   ZOO_DAPHNIABIG2_error <- ZOO_DAPHNIABIG2_init*0.001
   ZOO_DAPHNIASMALL3_error <- ZOO_DAPHNIASMALL3_init*0.001
@@ -263,49 +305,72 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                     ZOO_COPEPODS1_error,ZOO_DAPHNIABIG2_error,ZOO_DAPHNIASMALL3_error)
   
   
-  if(!PRE_SCC){
-    catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
-    #PROCESS TEMPERATURE OBSERVATIONS
-    obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    for(i in 1:length(obs_temp$obs[,1])){
-      for(j in 1:length(obs_temp$obs[1,])){
-        if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
-          obs_temp$obs[i,j] = NA
-        } 
-      }
+  #Extract observations
+  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
+  #PROCESS TEMPERATURE OBSERVATIONS
+  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time,depths = the_depths_init,TempObservedDepths = TempObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  for(i in 1:length(obs_temp$obs[,1])){
+    for(j in 1:length(obs_temp$obs[1,])){
+      if(obs_temp$obs[i,j] == 0 | is.na(obs_temp$obs[i,j]) | is.nan(obs_temp$obs[i,j])){
+        obs_temp$obs[i,j] = NA
+      } 
     }
-    TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-    init_temps1 <- obs_temp$obs[1,]
-    
-    #PROCESS DO OBSERVATIONS
-    DoObservedDepths <- c(1,5,9)
-    obs_do <- extract_do_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
-    init_do1 <- obs_do$obs[1,]
-    
-    Chla_fDOM_ObservedDepths <- 1
-    obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    
-  }else{
-    fname <- paste0('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/CTD_Meta_13_17.csv')
-    obs_temp <- extract_temp_CTD(fname,full_time_day,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
-    TempObservedDepths <- the_depths_init
-    init_temps1 <- obs_temp$obs[1,]
   }
   
+  init_temps <- obs_temp$obs[1,]
   
+  #PROCESS DO OBSERVATIONS
+  DoObservedDepths <- c(1,5,9)
+  obs_do <- extract_do_chain(fname = catwalk_fname,full_time,depths = the_depths_init,DoObservedDepths= DoObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
+  init_do1 <- obs_do$obs[1,]
+  
+  Chla_fDOM_ObservedDepths <- 1
+  obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time,depths = the_depths_init,Chla_fDOM_ObservedDepths= Chla_fDOM_ObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  
+  #Use the CTD observation rather than the sensor string when CTD data is avialable
+  if(USE_CTD){
+    ## LOOK AT CTD DATA
+    fl <- c(list.files('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/', pattern = 'CTD', full.names = TRUE))
+    #NEED TO DOUBLE CHECK TIME ZONE
+    obs_ctd <- extract_temp_CTD(fname = fl[1],full_time_day_local,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
+    obs_ctd$obs_do <- obs_ctd$obs_do*1000/32
+    for(i in 1:length(full_time_day)){
+      if(!is.na(obs_ctd$obs_temp[i,1])){
+        obs_temp$obs[i,] <- obs_ctd$obs_temp[i,]
+        obs_do$obs[i,] <- obs_ctd$obs_do[i,]
+        obs_chla_fdom$Chla_obs[i,] <- obs_ctd$obs_chla[i,]
+      }
+    }
+    init_pH_obs <- obs_ctd$obs_pH[1,which(!is.na(obs_ctd$obs_pH[1,]))]
+    init_obs_pH_depths <- the_depths_init[which(!is.na(obs_ctd$obs_pH[1,]))]
+    
+    init_sal_obs <- obs_ctd$obs_sal[1,which(!is.na(obs_ctd$obs_sal[1,]))]
+    init_obs_sal_depths <- the_depths_init[which(!is.na(obs_ctd$obs_sal[1,]))]
+  }
+  
+  init_temps_obs <- obs_temp$obs[1,which(!is.na(obs_temp$obs[1,]))]
+  init_obs_temp_depths <- the_depths_init[which(!is.na(obs_temp$obs[1,]))]
+  
+  init_do_obs <- obs_do$obs[1,which(!is.na(obs_do$obs[1,]))]
+  init_obs_do_depths <- the_depths_init[which(!is.na(obs_do$obs[1,]))]
   
   #NEED AN ERROR CHECK FOR WHETHER THERE ARE OBSERVED DATA
   if(is.na(restart_file)){
-    if((length(which(init_temps1 != 0.0)) == 0) | length(which(is.na(init_temps1))) >0){
+    if((length(which(init_temps_obs != 0.0)) == 0) | length(which(is.na(init_temps_obs))) >0){
       print('Pick another start day or provide an initial condition file: observations not avialable for starting day')
       break
     }
-    temp_inter <- approxfun(TempObservedDepths,init_temps1,rule=2)
+    temp_inter <- approxfun(init_obs_temp_depths,init_temps_obs,rule=2)
     the_temps_init <- temp_inter(the_depths_init)
     if(include_wq){
-      do_inter <- approxfun(DoObservedDepths,init_do1,rule=2)
-      do_init <- do_inter(the_depths_init) 
+      do_inter <- approxfun(init_obs_do_depths,init_do_obs,rule=2)
+      do_init <- do_inter(the_depths_init)
+      if(length(which(!is.na(init_pH_obs)))>0){
+        pH_inter <- approxfun(init_obs_pH_depths,init_pH_obs,rule=2)
+        pH_init <- pH_inter(the_depths_init)
+      }
     }
   }
   
@@ -325,7 +390,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         wq_end[wq] <- wq_end[wq-1] + (length(the_depths_init))
       }
       
-      if(num_pars > 0){
+      if(num_pars > 0){ #NEED TO GENERALIZE
         par1 <- wq_end[num_wq_vars] + 1
         par2 <- par1 + 1
         par3 <-  par2 + 1
@@ -356,7 +421,12 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   }else{
     OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)    
   }
-  CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init)
+  if(include_wq & USE_CTD){
+    CAR_pH_init_depth <- pH_init
+  }else{
+    CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init) 
+  }
+  
   CAR_dic_init_depth <- rep(CAR_dic_init,nlayers_init)
   CAR_ch4_init_depth <- rep(CAR_ch4_init,nlayers_init)
   SIL_rsi_init_depth <- rep(SIL_rsi_init,nlayers_init)
@@ -376,6 +446,47 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   ZOO_COPEPODS1_init_depth <- rep(ZOO_COPEPODS1_init,nlayers_init)
   ZOO_DAPHNIABIG2_init_depth <- rep(ZOO_DAPHNIABIG2_init,nlayers_init)
   ZOO_DAPHNIASMALL3_init_depth <- rep(ZOO_DAPHNIASMALL3_init,nlayers_init)
+  
+  #if(full_time_day_local[1] == as.data.frame.POSIXct('201')
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
+  #mg/L
+  #curr_values <- c(3.764, 3.781, 3.578, 5.156, 5.2735, 5.5165, 5.222, 5.368)
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #CAR_dic_init_depth <- inter(the_depths_init)
+  
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8,9,9.5)
+  #umol CH4/L
+  #curr_values <- c(3.91E-04,0.370572728,0.107597836,0.126096596,0.088502664,0.086276629,0.07256043,0.07249431)
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #CAR_ch4_init_depth <- inter(the_depths_init)
+  
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
+  #curr_values <- c(12.65291714,4.213596723,10.5935375,13.43611258,11.34765394,11.95676704,11.98577285,12.82695814)
+  #ug/L
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #NIT_amm_init_depth <- inter(the_depths_init)
+  
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
+  #curr_values <-c(5.68,3.82,4.46,3.71,4.18,5.08,3.01,7.72)
+  #ug/L
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #NIT_nit_init_depth <- inter(the_depths_init)
+  
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
+  #ug/L
+  #curr_values <- c(8.96,7.66,6.26,6.22,7.72,9.69,7.95,10.5)
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #PHS_frp_init_depth <- inter(the_depths_init)
+  
+  #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
+  ##mg/L
+  #curr_values <- c(4.2315,4.374, 3.2655,2.9705,2.938,2.922,2.773,2.9525)
+  #inter <- approxfun(curr_depths,curr_values,rule=2)
+  #OGM_poc_init_depth <- inter(the_depths_init)
+  
+  #}else{
+  
+  #}
   
   wq_init_vals <- c(OXY_oxy_init_depth,
                     CAR_pH_init_depth,
@@ -410,14 +521,12 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   update_var(nlayers_init,'num_depths',workingGLM)
   update_var(the_depths_init,'the_depths',workingGLM)
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
-  update_var(sw_factor,'sw_factor',workingGLM)
-  update_var(lw_factor,'lw_factor',workingGLM)
-  
+
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
-    nstates <- nlayers_init*(1+num_wq_vars) + num_pars
+    nstates <- nlayers_init*(1+num_wq_vars)
   }else{
-    nstates <- nlayers_init + num_pars
+    nstates <- nlayers_init
   }
   
   if(include_wq){
@@ -428,7 +537,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   #Observations for each observed state at each time step
   #an observation with at least 1 observation but without an observation in a time-step gets assigned an NA
-  z <- t(matrix(rep(NA,nobs), nrow = nobs, ncol = nsteps))
+  #z <- t(matrix(rep(NA,nobs), nrow = nobs, ncol = nsteps))
   if(include_wq){
     z <- cbind(obs_temp$obs,obs_do$obs)
   }else{
@@ -442,28 +551,25 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
   if(include_wq){
-    obs_index <- rep(NA,length(TempObservedDepths)+length(DoObservedDepths))
-    #THIS IS NOT GENERAL - IT IS SPECIFIC TO THE SET OF SENSOR WE HAVE
-    for(i in 1:length(TempObservedDepths)){
-      obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
+    obs_index <- rep(NA,length(the_depths_init)*(num_wq_vars+1))
+    obs_index[1:length(the_depths_init)] <- seq(1,length(the_depths_init),1)
+    for(wq in 1:num_wq_vars){
+      obs_index[wq_start[wq]:wq_end[wq]] <- seq(wq_start[wq],wq_end[wq],1)
     }
-    for(i in 1:length(DoObservedDepths)){
-      obs_index[length(TempObservedDepths)+i] <- length(the_depths_init) + which.min(abs(the_depths_init - DoObservedDepths[i]))
-    }
-    #INSERT OTHER OBSERVATIONS
   }else{
-    obs_index <- rep(NA,length(TempObservedDepths))
-    for(i in 1:length(TempObservedDepths)){
-      obs_index[i] <- which.min(abs(the_depths_init - TempObservedDepths[i]))
-    } 
+    obs_index <- rep(NA,length(the_depths_init))
+    obs_index[1:length(the_depths_init)] <- seq(1,length(the_depths_init),1)
   }
   
   #Matrix for knowing which state the observation corresponds to
   z_states <- t(matrix(obs_index, nrow = length(obs_index), ncol = nsteps))
   
   #Process error 
-  
-  Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
+  if(is.na(cov_matrix)){
+    Qt <- read.csv(paste0(workingGLM,'/','Qt_cov_matrix.csv'))
+  }else{
+    Qt <- read.csv(paste0(workingGLM,'/',cov_matrix))
+  }
   
   if(include_wq){
     for(i in 1:num_wq_vars){
@@ -475,21 +581,10 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     }
   }
   
-  if(num_pars >0){
-    Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
-    Qt <- cbind(Qt,rep(0.0,nrow(Qt)))  
-    Qt[ncol(Qt),nrow(Qt)] <- zone1temp_init_Qt
-    Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
-    Qt <- cbind(Qt,rep(0.0,nrow(Qt))) 
-    Qt[ncol(Qt),nrow(Qt)] <- zone2temp_init_Qt
-    Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
-    Qt <- cbind(Qt,rep(0.0,nrow(Qt))) 
-    Qt[ncol(Qt),nrow(Qt)] <- kw_init_Qt
-  }
+  #Covariance matrix for parameters
+  Qt_pars <- matrix(data = 0,nrow = num_pars, ncol = num_pars)
+  diag(Qt_pars) <- c(zone1temp_init_Qt,zone2temp_init_Qt,kw_init_Qt)
   
-  
-  
-  #NEED TO FIX
   psi <- rep(obs_error,length(obs_index))
   
   ### INITILIZE FIRST TIME STEP
@@ -500,15 +595,15 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     }
   }
   
-  x <- array(NA,dim=c(nsteps,nmembers,nstates))
-  x_prior <- array(NA,dim=c(nsteps,nmembers,nstates))
+  x <- array(NA,dim=c(nsteps,nmembers,nstates + num_pars))
+  x_prior <- array(NA,dim=c(nsteps,nmembers,nstates + num_pars))
   
   #Initial conditions
   if(!restart_present){
     if(include_wq){
-      x <- array(NA,dim=c(nsteps,nmembers,nstates))
       if(num_pars > 0){
-        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
+        x[1,,1:nstates] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals), sigma=as.matrix(Qt))
+        x[1,,nstates+1:nstates+num_pars] <- rmvnorm(n=nmembers, mean=c(zone1_temp,zone2_temp,kw_init),sigma = as.matrix(Qt_pars))
         if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
           for(m in 1:nmembers){
             x[1,m,] <- c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init)
@@ -524,7 +619,8 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       }
     }else{
       if(num_pars > 0){
-        x[1,,] <- rmvnorm(n=nmembers, mean=c(the_temps_init,zone1_temp,zone2_temp,kw_init), sigma=as.matrix(Qt))
+        x[1,,1:nstates] <- rmvnorm(n=nmembers, mean=c(the_temps_init), sigma=as.matrix(Qt))
+        x[1,,(nstates+1):(nstates+num_pars)] <- rmvnorm(n=nmembers, mean=c(zone1_temp,zone2_temp,kw_init),sigma = as.matrix(Qt_pars))
         if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
           for(m in 1:nmembers){
             x[1,m,] <- c(the_temps_init,zone1_temp,zone2_temp,kw_init)
@@ -541,6 +637,15 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         }
       }
     }
+    if(include_wq){
+      for(m in 1:nmembers){
+        for(wq in 1:num_wq_vars){
+          index <- which(x[1,m,] < 0.0)
+          index <- index[which(index > wq_start[1])]
+          x[1,m,index] <- 0.0
+        }
+      }
+    }
     write.csv(x[1,,],paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'),row.names = FALSE)
   }
   
@@ -554,7 +659,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=FALSE)
       restart_x_previous <- ncvar_get(nc, "x_restart")
       x_previous <- restart_x_previous[sampled_nmembers,]
-      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE & hist_days == 0){
         x_previous_1 <- colMeans(x_previous)
         for(m in 1:nmembers){
           x_previous[m,] <- x_previous_1
@@ -564,7 +669,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       sampled_nmembers <- sample(seq(1,restart_nmembers,1),nmembers,replace=TRUE)
       restart_x_previous <- ncvar_get(nc, "x_restart")
       x_previous <- restart_x_previous[sampled_nmembers,]
-      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE & hist_days == 0){
         x_previous_1 <- colMeans(x_previous)
         for(m in 1:nmembers){
           x_previous[m,] <- x_previous_1
@@ -572,35 +677,26 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       }
     }else{
       x_previous <- ncvar_get(nc, "x_restart")   
-      if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
+      if(INITIAL_CONDITION_UNCERTAINITY == FALSE & hist_days == 0){
         x_previous_1 <- colMeans(x_previous) 
         for(m in 1:nmembers){
           x_previous[m,] <- x_previous_1
         }
       }
     }
-    Qt <- ncvar_get(nc, "Qt_restart")
+    #Qt <- ncvar_get(nc, "Qt_restart")
     nc_close(nc)
   }else{
     x_previous <- read.csv(paste0(workingGLM,'/','restart_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_cold.csv'))
   }
   
-  if(dim(x[1,,])[1] != dim(x_previous)[1] | dim(x[1,,])[2] != dim(x_previous)[2]){
-    print('ERROR: Dimension of the restart file are not correct. State variables or ensemble mismatch?')
-    print('Need to fix if the states match but the ensemble number does not')
-  }
-  
   #Set initial conditions
   x[1,,] <- as.matrix(x_previous)
   x_prior[1,,] <- as.matrix(x_previous)
-  #parameter_matrix <- array(NA,dim=c(nmembers,3))
-  #parameter_matrix[,1] <- rnorm(nmembers,sw_factor,0.05)
-  #parameter_matrix[,2] <- rnorm(nmembers,1.0,0.2)
-  #parameter_matrix[,3] <- rnorm(nmembers,0.0013,0.0003)
   
   #Matrix to store ensemble specific deviations and innovations
   dit <- array(NA,dim=c(nmembers,nstates))
-  dit_star = array(NA,dim=c(nmembers,nstates)) #Adaptive noise estimation
+  dit_pars<- array(NA,dim=c(nmembers,num_pars))
   
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
@@ -620,13 +716,22 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     #Create array to hold GLM predictions for each ensemble
     x_star <- array(NA, dim = c(nmembers,nstates))
     x_corr <- array(NA, dim = c(nmembers,nstates))
+    pars_corr <-  array(NA, dim = c(nmembers,num_pars))
+    
     for(m in 1:nmembers){
       
       tmp <- update_temps(curr_temps = round(x[i-1,m,temp_start:temp_end],3),the_depths_init,workingGLM)
       update_var(surface_height[i-1,m],'lake_depth',workingGLM)
       if(num_pars > 0){
-        update_var(c(round(x[i-1,m,par1],3),round(x[i-1,m,par2],3)),'sed_temp_mean',workingGLM)
-        update_var(round(x[i-1,m,par3],3),'Kw',workingGLM)
+        if(i > (hist_days+1)){
+          new_pars <- x[i-1,m,(nstates+1):(nstates+num_pars)]
+        }else{
+          new_pars <- rmvnorm(n=1, mean = c(x[i-1,m,(nstates+1):(nstates+num_pars)]),sigma=as.matrix(Qt_pars))
+        }
+        update_var(c(round(new_pars[1],3),round(new_pars[2],3)),'sed_temp_mean',workingGLM)
+        update_var(round(new_pars[3],3),'sw_factor',workingGLM)
+        update_var(round(new_pars[3],3),'lw_factor',workingGLM)
+        pars_corr[m,] <- new_pars
       }
       
       if(include_wq){
@@ -668,9 +773,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
               GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
               x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
             }
-            x_star[m,par1] <- x[i-1,m,par1]
-            x_star[m,par2] <- x[i-1,m,par2]
-            x_star[m,par3] <- x[i-1,m,par3]
+            
             surface_height[i,m] <- GLM_temp_wq_out$surface_height 
             if(length(which(is.na(x_star[m,])))==0){
               pass = TRUE
@@ -694,14 +797,6 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         met_index <- 1
       }
       
-      #if(!USE_QT_MATRIX){
-      #  corr_temps <- x_star[m,temp_start:temp_end] + rnorm(1,0,temp_error) #tmp(the_depths_init)
-      #  corr_depths <- the_depths_init + rnorm(1,0,thermo_depth_error)
-      #  corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
-      #  corrupt_profile <- approxfun(corr_depths,corr_temps,rule = 2)
-      #  x_corr[m,temp_start:temp_end] <- corrupt_profile(the_depths_init)
-      #}
-      
     }
     
     #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCE NA VALUES OR HAVE NEGATIVE TEMPERATURES
@@ -723,20 +818,9 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     }
     
     #Corruption [nmembers x nstates] 
-    if(USE_QT_MATRIX){
-      NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
-      zero_par3 <- which(x_star[,par3] + NQt[,par3] <= 0.0)
-      if(length(zero_par3) > 0.0){
-        for(kk in 1:length(zero_par3)){
-          pass <- FALSE
-          while(!pass){
-            NQt[kk,] <- rmvnorm(n=1, sigma=as.matrix(Qt))
-            if(NQt[kk,par3] > 0.0){pass <- TRUE}
-          }
-        }
-      }
-      x_corr <- x_star + NQt
-    }
+    NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
+    x_corr <- x_star + NQt
+    
     if(include_wq){
       for(m in 1:nmembers){
         for(wq in 1:num_wq_vars){
@@ -747,7 +831,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       }
     }
     
-    x_prior[i,,] <- x_corr
+    x_prior[i,,] <- cbind(x_corr,pars_corr)
     
     if(i >= spin_up_days+1){
       #Obs for time step
@@ -755,9 +839,14 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       
       #if no observations at a time step then just propogate model uncertainity
       if(length(z_index) == 0 | i > (hist_days+1)){
-        x[i,,] <- x_corr
-        if(PROCESS_UNCERTAINITY == FALSE){
-          x[i,,] <- x_star
+        x[i,,] <- cbind(x_corr,pars_corr) 
+        if(PROCESS_UNCERTAINITY == FALSE & i > (hist_days+1)){
+          x[i,,] <- cbind(x_star,pars_corr)
+        }
+        if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
+          for(m in 1:nmembers){
+            x[i,m,] <- colMeans(cbind(x_star,pars_corr)) 
+          }
         }
       }else{
         #if observation then calucate Kalman adjustment
@@ -780,37 +869,42 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         
         #Ensemble mean
         ens_mean <- apply(x_corr, 2, mean)
-        #ens_mean_star = apply(x_star, 2, mean) #Adaptive noise estimation
+        if(num_pars > 0){
+          par_mean <- apply(pars_corr, 2, mean)
+        }
         
         N_psi = t(rmvnorm(n=1,mean = zt, sigma=as.matrix(psi_t)))
         D_mat <- t(matrix(rep(N_psi,each=nmembers), nrow = nmembers, ncol=length(N_psi)))
         
         #Loop through ensemble members
         for(m in 1:nmembers){  
-          #  
+          
           #  #Ensemble specific deviation
           dit[m,] <- x_corr[m,]-ens_mean
-          #dit_star[m,] <- x_star[m,] - ens_mean_star #Adaptive noise estimation
+          dit_pars[m, ] <- pars_corr[m,] - par_mean
           
-          #  #Ensemble specific estimate and innovation covariance
           if(m == 1){
             Pit <- dit[m,] %*% t(dit[m,]) 
-            #    Pit_star <- dit_star[m,] %*% t(dit_star[m,]) 
+            Pit_pars <- dit_pars[m, ] %*% t(dit[m,])
           }else{
             Pit <- dit[m,] %*% t(dit[m,]) +  Pit 
-            #     Pit_star <- dit_star[m,] %*% t(dit_star[m,]) +  Pit_star 
+            Pit_pars <- dit_pars[m, ] %*% t(dit[m,]) + Pit_pars
           }
         }
         
         #estimate covariance
-        Pt <- Pit/nmembers
-        
+        Pt <- Pit/(nmembers-1)
+        Pt_pars <- Pit_pars/(nmembers-1)
         #Kalman gain
         Kt <- Pt %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
+        Kt_pars <- Pt_pars %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
         
         #Update states array (transposes are necessary to convert between the dims here and the dims in the EnKF formulations)
-        x[i,,] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
-        
+        x[i,,1:nstates] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
+        for(pp in 1:num_pars){
+          x[i,,(nstates+pp)] <- alpha[pp]*x[i-1,,(nstates+pp)] + (1-alpha[pp])*t(t(pars_corr) + Kt_pars%*%(D_mat - H%*%t(x_corr)))[,pp]
+        }
+
         if(include_wq){
           for(m in 1:nmembers){
             for(wq in 1:num_wq_vars){
@@ -821,13 +915,18 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
           }
         }
         
+        #IF NO INITIAL CONDITION UNCERTAINITY THEN SET EACH ENSEMBLE MEMBER TO THE MEAN
+        #AT THE INITIATION OF THE FUTURE FORECAST
         if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
-          x[i,,] <- x_star
+          for(m in 1:nmembers){
+            x[i,m,] <- colMeans(cbind(x_star,pars_corr)) 
+          }
         }
+        
         if(length(which(is.na(x[i,,]))) > 0){dies = i}
       }
     }else{
-      x[i,,] <- x_star
+      x[i,,] <- cbind(x_star,pars_corr)
     }
     
     if(i == (hist_days+1)){
@@ -864,7 +963,10 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                         wq_end,
                         par1,
                         par2,
-                        par3)
+                        par3,
+                        z,
+                        nstates,
+                        num_pars)
   
   ##ARCHIVE FORECAST
   restart_file_name <- archive_forecast(workingGLM = workingGLM,

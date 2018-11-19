@@ -1,16 +1,22 @@
 write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior,
-                                  include_wq,wq_start,wq_end,par1,par2,par3){
+                                  include_wq,wq_start,wq_end,par1,par2,par3,z,nstates,num_pars){
+  
+  obs <- z
   
   ncfname <- paste0(save_file_name,'.nc')
   #Set dimensions
   ens <- seq(1,dim(x)[2],1)
   depth <- the_depths_init
-  t <- as.numeric(as.POSIXct(full_time),tz='EST5EDT',origin = '1970-01-01 00:00.00 UTC')
-  states <- seq(1,dim(x)[3],1)
+  t <- as.numeric(as.POSIXct(full_time,tz='EST5EDT',origin = '1970-01-01 00:00.00 UTC'))
+  states <- nstates
+  states_aug <- seq(1,dim(x)[3],1)
+  obs_states <- seq(1,dim(z)[2],1)
   
   #Set variable that states whether value is forecasted
   forecasted <- rep(1,length(t))
   forecasted[1:(hist_days+1)] <- 0
+  
+  
   
   #Create summary output
   mean_temp <- array(NA,dim=c(length(t),length(depth)))
@@ -29,6 +35,8 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   depthdim <- ncdim_def("z",units = "meters",vals = as.double(depth), longname = 'Depth from surface') 
   timedim <- ncdim_def("time",units = 'seconds', longname = 'seconds since 1970-01-01 00:00.00 UTC',vals = t)
   statedim <- ncdim_def("states",units = '', vals = states)
+  stateagudim <- ncdim_def("states_aug",units = '', vals = states_aug)
+  obsdim <- ncdim_def("obs_dim",units = '', vals = obs_states)
   
   #Define variables
   fillvalue <- 1e32
@@ -49,13 +57,17 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   dlname <- 'restart covariance matrix'
   Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,dlname,prec="float")
   dlname <- 'matrix for restarting EnKF'
-  x_def <- ncvar_def("x_restart","-",list(ensdim,statedim),fillvalue,dlname,prec="float")
+  x_def <- ncvar_def("x_restart","-",list(ensdim,stateagudim),fillvalue,dlname,prec="float")
   dlname <- 'Predicted states prior to Kalman correction'
-  x_prior_def <- ncvar_def("x_prior","-",list(timedim,ensdim,statedim),fillvalue,dlname,prec="float")
+  x_prior_def <- ncvar_def("x_prior","-",list(timedim,ensdim,stateagudim),fillvalue,dlname,prec="float")
+  dlname <- 'observations'
+  obs_def <- ncvar_def("obs","various",list(timedim,obsdim),fillvalue,dlname,prec="single")
   
   fillvalue <- -99
   dlname <- '0 = historical; 1 = forecasted'
   forecast_def <- ncvar_def("forecasted","-",list(timedim),fillvalue,longname = dlname,prec="integer")
+  
+  
   
   if(include_wq){
     dlname <- 'OXY_oxy'
@@ -101,12 +113,12 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
     dlname <- 'ZOO_COPEPODS1'
     wq_def21 <- ncvar_def("ZOO_DAPHNIASMALL3","umol/L",list(timedim,ensdim,depthdim),fillvalue,dlname,prec="single")
     
-    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def,
+    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def,obs_def,
                                     wq_def1,wq_def2,wq_def3,wq_def4,wq_def5,wq_def6,wq_def7,wq_def8,wq_def9,wq_def10,wq_def11,wq_def12, wq_def13,wq_def14,wq_def15,
                                     wq_def16,wq_def17,wq_def18,wq_def19,wq_def20,wq_def21),force_v4=T)
     
   }else{
-    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def),force_v4=T)
+    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def,obs_def),force_v4=T)
   }
   
   # create netCDF file and put arrays
@@ -131,6 +143,8 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   ncvar_put(ncout,x_prior_def,as.matrix(x_prior))
   
   ncvar_put(ncout,Qt_restart_def,as.matrix(Qt_restart))
+  
+  ncvar_put(ncout,obs_def,obs)
   
   if(include_wq){
     ncvar_put(ncout,wq_def1,x[,,wq_start[1]:wq_end[1]])
