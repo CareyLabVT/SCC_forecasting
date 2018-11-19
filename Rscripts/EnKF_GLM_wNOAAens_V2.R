@@ -1,7 +1,7 @@
 run_forecast<-function(start_day= '2018-07-06 00:00:00', 
                        sim_name = NA, 
                        hist_days = 1,
-                       forecast_days = 15,  
+                       forecast_days = 16,  
                        spin_up_days = 0,
                        restart_file = NA,
                        Folder, 
@@ -13,7 +13,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                        USE_CTD = USE_CTD,
                        uncert_mode = 1,
                        cov_matrix = NA,
-                       alpha = 0.5){
+                       alpha = c(0.5,0.5,0.5)){
   
   ###RUN OPTIONS
   num_pars <- 3
@@ -74,7 +74,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     WEATHER_UNCERTAINITY <- FALSE
     INITIAL_CONDITION_UNCERTAINITY <- TRUE
     PARAMETER_UNCERTAINITY <- FALSE
-  }else if(uncert_mode == 6){
+  }else if(uncert_mode == 7){
     #only parameter uncertainity
     USE_OBS_CONTRAINT <- FALSE
     #SOURCES OF UNCERTAINITY
@@ -98,7 +98,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     kw_init <- 1.0
     kw_init_Qt <- 0.01^2 #THIS IS THE VARIANCE, NOT THE SD
   }
-
+  
   #ERROR TERMS
   if(OBSERVATION_UNCERTAINITY){
     obs_error <- 0.0001 #NEED TO DOUBLE CHECK
@@ -536,7 +536,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   update_var(nlayers_init,'num_depths',workingGLM)
   update_var(the_depths_init,'the_depths',workingGLM)
   update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
-
+  
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
     nstates <- nlayers_init*(1+num_wq_vars)
@@ -740,7 +740,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       if(num_pars > 0){
         if(i > (hist_days+1)){
           new_pars <- x[i-1,m,(nstates+1):(nstates+num_pars)]
-          if(!PARAMETER_UNCERTAINITY){
+          if(PARAMETER_UNCERTAINITY == FALSE){
             new_pars <- mean(x[i-1,,(nstates+1):(nstates+num_pars)])
           }
         }else{
@@ -923,7 +923,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         for(pp in 1:num_pars){
           x[i,,(nstates+pp)] <- alpha[pp]*x[i-1,,(nstates+pp)] + (1-alpha[pp])*t(t(pars_corr) + Kt_pars%*%(D_mat - H%*%t(x_corr)))[,pp]
         }
-
+        
         if(include_wq){
           for(m in 1:nmembers){
             for(wq in 1:num_wq_vars){
@@ -938,7 +938,11 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
         #AT THE INITIATION OF THE FUTURE FORECAST
         if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
           for(m in 1:nmembers){
+            if(PARAMETER_UNCERTAINITY == FALSE){
             x[i,m,] <- colMeans(cbind(x_star,pars_corr)) 
+            }else{
+              x[i,m,] <- cbind(colMeans(x_star),x[i,m,(nstates+1):(nstates+num_pars)])
+            }
           }
         }
         
