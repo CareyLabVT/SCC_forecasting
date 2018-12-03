@@ -188,7 +188,35 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   text(full_time_past[length(full_time_past)-2],80,'past')
   text(full_time[4],80,'future')
   #HISTORICAL AND FUTURE TEMPERATURE
-  depth_colors <- c("firebrick4","firebrick1","DarkOrange1","gold","greenyellow","medium sea green","sea green","DeepSkyBlue4","blue2","blue4")
+  depth_colors <- c("firebrick4",
+                    NA,
+                    NA,
+                    "firebrick1",
+                    NA,
+                    NA,
+                    "DarkOrange1",
+                    NA,
+                    NA,
+                    "gold",
+                    NA,
+                    NA,
+                    "greenyellow",
+                    NA,
+                    NA,
+                    "medium sea green",
+                    NA,
+                    NA,
+                    "sea green",
+                    NA,
+                    NA,
+                    "DeepSkyBlue4",
+                    NA,
+                    NA,
+                    "blue2",
+                    NA,
+                    NA,
+                    "blue4",
+                    NA)
   
   plot(full_time_plotting,rep(-99,length(full_time_plotting)),ylim=c(5,35),xlab = 'date',ylab = expression(~degree~C))
   title(paste0('Water temperature forecast'),cex.main=0.9)
@@ -196,8 +224,8 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   axis(1, at=full_time_plotting + hours(4),las=2, cex.axis=0.7, tck=-0.01,labels=FALSE)
   depth_colors_index = 0
   for(i in 1:length(obs_index)){
-    if(!is.na(obs_temp_past$obs[1,i])){
-      depth_colors_index <- depth_colors_index + 1
+    if(length(!is.na(obs_temp_past$obs[,i])) > 1  | length(which(obs_index[i]  == focal_depths)) == 1){
+      depth_colors_index <- i
       points(full_time_past, obs_temp_past$obs[1:length(full_time_past),i],type='l',col=depth_colors[depth_colors_index],lwd=1.5)
       index <- which(obs_index[i]  == focal_depths)
       if(length(index) == 1){

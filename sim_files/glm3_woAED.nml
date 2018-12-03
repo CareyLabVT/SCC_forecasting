@@ -63,8 +63,8 @@
    meteo_fl = 'FCR_GLM_met_NLDAS2_010113_010118_GMTadjusted.csv'
    subdaily = .true.
    wind_factor = 1.0
-   sw_factor = 0.8 !Tweaking this affects evaporation quite a bit, 1.0, Paul has set to 0.91
-   lw_factor = 0.8 !Tweaking this affects evaporation quite a bit, Paul has set to 0.91
+   sw_factor = 1.0
+   lw_factor = 1.0 
    at_factor = 1
    rh_factor = 1
    rain_factor = 1
@@ -81,7 +81,7 @@
    subm_flag = .false.
    strm_hf_angle = 55 !55
    strmbd_slope = 0.05
-   strmbd_drag = 0.03
+   strmbd_drag = 0.016 !0.03
    inflow_factor = 1
    inflow_fl = 'FCR_inflow_20180419gep_all_00z.csv'
    inflow_varnum = 13
@@ -105,7 +105,7 @@
   benthic_mode = 2
   n_zones = 2
   zone_heights =  6, 9.5 !!!!4,9.5
-  sed_heat_Ksoil = 1.8, 1.8, !!!!0.25,0.9 !more organic, closer to 0.25, up to 2.9, default=1.2
+  sed_heat_Ksoil = 1.2, 1.2, !1.8, 1.8
   sed_temp_depth = 0.2, 0.2
   sed_temp_mean = 11, 17!!!!14.6,8 !14.6,10.6
   sed_temp_amplitude = 0, 0, 

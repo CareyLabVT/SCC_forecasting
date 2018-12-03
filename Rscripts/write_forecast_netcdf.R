@@ -1,5 +1,5 @@
 write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior,
-                                  include_wq,wq_start,wq_end,par1,par2,par3,z,nstates,num_pars){
+                                  include_wq,wq_start,wq_end,par1,par2,par3,z,nstates,npars){
   
   obs <- z
   
