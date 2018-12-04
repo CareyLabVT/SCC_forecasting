@@ -15,10 +15,62 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                        cov_matrix = NA,
                        alpha = c(0.5,0.5,0.5)){
   
+  #################################################
+  ### CONFIGURATIONS THAT NEED TO BE GENERALIZED
+  #################################################
+  
   ###RUN OPTIONS
   npars <- 3
-  
   PRE_SCC <- FALSE
+  
+  #Parameters
+  lake_depth_init <- 9.4  #not a modeled state
+  zone2_temp <- 17
+  zone1_temp <- 11
+  zone1temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
+  zone2temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
+  if(include_wq){
+    kw_init <- 0.1
+    kw_init_Qt <- 0.00000000001
+  }else{
+    kw_init <- 1.0
+    kw_init_Qt <- 0.01^2 #THIS IS THE VARIANCE, NOT THE SD
+  }
+  
+  obs_error <- 0.0001 #NEED TO DOUBLE CHECK
+
+  #Define modeled depths and depths with observations
+  the_depths_init <- c(0.1, 0.33, 0.66, 
+                       1.00, 1.33,1.66,
+                       2.00,2.33,2.66,
+                       3.0,3.33,3.66,
+                       4.0,4.33,4.66,
+                       5.0,5.33,5.66,
+                       6.0,6.33,6.66,
+                       7.00,7.33,7.66,
+                       8.0,8.33,8.66,
+                       9.00,9.33)
+  
+  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+  DoObservedDepths <- c(1,5,9)
+  Chla_fDOM_ObservedDepths <- 1
+  
+  temp_obs_fname <- 'Catwalk.csv'
+  met_obs_fname <- 'FCRmet.csv'
+  
+  #define water quality variables modeled.  Not used if include_wq == FALSE
+  wq_names <- c('OXY_oxy',
+                'CAR_pH','CAR_dic','CAR_ch4',
+                'SIL_rsi',
+                'NIT_amm', 'NIT_nit',
+                'PHS_frp',
+                'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
+                'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4',
+                'ZOO_COPEPODS1','ZOO_DAPHNIABIG2','ZOO_DAPHNIASMALL3')
+  
+  #################################################
+  ### OPTIONS TO ISOLATE COMPONENTS OF UNCERTAINITY
+  #################################################
   
   if(uncert_mode == 1){
     #All sources of uncertainity and data used to constrain 
@@ -84,26 +136,8 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     INITIAL_CONDITION_UNCERTAINITY <- FALSE
     PARAMETER_UNCERTAINITY <- TRUE
   }
-  
-  #Parameters
-  lake_depth_init <- 9.4  #not a modeled state
-  zone2_temp <- 17
-  zone1_temp <- 11
-  zone1temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
-  zone2temp_init_Qt <- 0.01 #THIS IS THE VARIANCE, NOT THE SD
-  if(include_wq){
-    kw_init <- 0.1
-    kw_init_Qt <- 0.00000000001
-  }else{
-    kw_init <- 1.0
-    kw_init_Qt <- 0.01^2 #THIS IS THE VARIANCE, NOT THE SD
-  }
-  
-  #ERROR TERMS
   if(OBSERVATION_UNCERTAINITY){
     obs_error <- 0.0001 #NEED TO DOUBLE CHECK
-  }else{
-    obs_error <- 0.0001 #NEED TO DOUBLE CHECK   
   }
   
   ####################################################
@@ -175,8 +209,8 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   ###SET FILE NAMES
   forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
-  catwalk_fname <-  paste0(workingGLM,'/','Catwalk.csv')
-  met_obs_fname <-paste0(workingGLM,'/','FCRmet.csv')
+  temp_obs_fname_wdir <-  paste0(workingGLM,'/',temp_obs_fname)
+  met_obs_fname_wdir <-paste0(workingGLM,'/',met_obs_fname)
   met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
     sim_name <- paste0(year(full_time_local[1]),'_',month(full_time_local[1]),'_',day(full_time_local[1]))
@@ -194,13 +228,12 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   system(paste0('git pull'))
   
   #download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
-  #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/','Catwalk.csv'))
+  #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/',temp_obs_fname))
   #download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
   ###CREATE HISTORICAL MET FILE
-  met_obs_fname <- paste0(carina_location,'/FCRmet.csv')
   obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
-  create_obs_met_input(fname = met_obs_fname,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
+  create_obs_met_input(fname = met_obs_fname_wdir,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   ###CREATE FUTURE MET FILES
   if(forecast_days >0 ){
@@ -248,32 +281,11 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   ###SET UP RUN
   
   #DEFINE DEPTHS THAT ARE MODELED
-  the_depths_init <- c(0.1, 0.33, 0.66, 
-                       1.00, 1.33,1.66,
-                       2.00,2.33,2.66,
-                       3.0,3.33,3.66,
-                       4.0,4.33,4.66,
-                       5.0,5.33,5.66,
-                       6.0,6.33,6.66,
-                       7.00,7.33,7.66,
-                       8.0,8.33,8.66,
-                       9.00,9.33)
-  
   nlayers_init <- length(the_depths_init)
   
   #DEFINE WATER QUALITY VARIABLES
-  wq_names <- c('OXY_oxy',
-                'CAR_pH','CAR_dic','CAR_ch4',
-                'SIL_rsi',
-                'NIT_amm', 'NIT_nit',
-                'PHS_frp',
-                'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
-                'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4',
-                'ZOO_COPEPODS1','ZOO_DAPHNIABIG2','ZOO_DAPHNIASMALL3')
-  
   num_wq_vars <- length(wq_names) 
   glm_output_vars <- c('temp',wq_names)
-  
   
   #Initial States
   the_sals_init <- 0.0
@@ -330,12 +342,10 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                     PHY_CYANOPCH1_error,PHY_CYANONPCH2_error,PHY_CHLOROPCH3_error,PHY_DIATOMPCH4_error,
                     ZOO_COPEPODS1_error,ZOO_DAPHNIABIG2_error,ZOO_DAPHNIASMALL3_error)
   
-  
   #Extract observations
-  catwalk_fname <- paste0(mia_location,'/','Catwalk.csv')
+  temp_obs_fname_wdir <- paste0(mia_location,'/',temp_obs_fname)
   #PROCESS TEMPERATURE OBSERVATIONS
-  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-  obs_temp <- extract_temp_chain(fname = catwalk_fname,full_time,depths = the_depths_init,TempObservedDepths = TempObservedDepths,
+  obs_temp <- extract_temp_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,TempObservedDepths = TempObservedDepths,
                                  input_tz = 'EST5EDT', output_tz = reference_tzone)
   for(i in 1:length(obs_temp$obs[,1])){
     for(j in 1:length(obs_temp$obs[1,])){
@@ -348,14 +358,12 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   init_temps <- obs_temp$obs[1,]
   
   #PROCESS DO OBSERVATIONS
-  DoObservedDepths <- c(1,5,9)
-  obs_do <- extract_do_chain(fname = catwalk_fname,full_time,depths = the_depths_init,DoObservedDepths= DoObservedDepths,
+  obs_do <- extract_do_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,DoObservedDepths= DoObservedDepths,
                              input_tz = 'EST5EDT', output_tz = reference_tzone)
   obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
   init_do1 <- obs_do$obs[1,]
   
-  Chla_fDOM_ObservedDepths <- 1
-  obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time,depths = the_depths_init,Chla_fDOM_ObservedDepths= Chla_fDOM_ObservedDepths,
+  obs_chla_fdom <- extract_chla_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,Chla_fDOM_ObservedDepths= Chla_fDOM_ObservedDepths,
                                       input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   #Use the CTD observation rather than the sensor string when CTD data is avialable
@@ -632,7 +640,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     if(include_wq){
       if(npars > 0){
         x[1,,1:nstates] <- rmvnorm(n=nmembers, mean=c(the_temps_init,wq_init_vals), sigma=as.matrix(Qt))
-        x[1,,nstates+1:nstates+npars] <- rmvnorm(n=nmembers, mean=c(zone1_temp,zone2_temp,kw_init),sigma = as.matrix(Qt_pars))
+        x[1,,(nstates+1):(nstates+npars)] <- rmvnorm(n=nmembers, mean=c(zone1_temp,zone2_temp,kw_init),sigma = as.matrix(Qt_pars))
         if(INITIAL_CONDITION_UNCERTAINITY == FALSE){
           for(m in 1:nmembers){
             x[1,m,] <- c(the_temps_init,wq_init_vals,zone1_temp,zone2_temp,kw_init)
@@ -722,8 +730,6 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   #Set initial conditions
   x[1,,] <- as.matrix(x_previous)
   x_prior[1,,] <- as.matrix(x_previous)
-  
-
   
   #Matrix to store essemble specific surface height
   surface_height <- array(NA,dim=c(nsteps,nmembers))
