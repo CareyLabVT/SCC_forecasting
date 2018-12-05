@@ -1,4 +1,4 @@
-write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior,
+write_forecast_netcdf <- function(x,full_time,Qt,modeled_depths,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior,
                                   include_wq,wq_start,wq_end,par1,par2,par3,z,nstates,npars){
   
   obs <- z
@@ -6,9 +6,9 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   ncfname <- paste0(save_file_name,'.nc')
   #Set dimensions
   ens <- seq(1,dim(x)[2],1)
-  depth <- the_depths_init
+  depths <- modeled_depths
   t <- as.numeric(as.POSIXct(full_time,tz='EST5EDT',origin = '1970-01-01 00:00.00 UTC'))
-  states <- nstates
+  states <- seq(1,nstates,1)
   states_aug <- seq(1,dim(x)[3],1)
   obs_states <- seq(1,dim(z)[2],1)
   
@@ -19,10 +19,10 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   
   
   #Create summary output
-  mean_temp <- array(NA,dim=c(length(t),length(depth)))
-  upper95_temp <- array(NA,dim=c(length(t),length(depth)))
-  lower95_temp <- array(NA,dim=c(length(t),length(depth)))
-  for(i in 1:length(depth)){
+  mean_temp <- array(NA,dim=c(length(t),length(depths)))
+  upper95_temp <- array(NA,dim=c(length(t),length(depths)))
+  lower95_temp <- array(NA,dim=c(length(t),length(depths)))
+  for(i in 1:length(depths)){
     for(j in 1:length(t)){
       mean_temp[j,i] <- mean(x[j,,i])
       lower95_temp[j,i] <- quantile(x[j,,i],0.025)
@@ -113,12 +113,12 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
     dlname <- 'ZOO_COPEPODS1'
     wq_def21 <- ncvar_def("ZOO_DAPHNIASMALL3","umol/L",list(timedim,ensdim,depthdim),fillvalue,dlname,prec="single")
     
-    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def,obs_def,
+    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,par1_def,par2_def,par3_def,x_prior_def,obs_def,
                                     wq_def1,wq_def2,wq_def3,wq_def4,wq_def5,wq_def6,wq_def7,wq_def8,wq_def9,wq_def10,wq_def11,wq_def12, wq_def13,wq_def14,wq_def15,
                                     wq_def16,wq_def17,wq_def18,wq_def19,wq_def20,wq_def21),force_v4=T)
     
   }else{
-    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,Qt_restart_def,par1_def,par2_def,par3_def,x_prior_def,obs_def),force_v4=T)
+    ncout <- nc_create(ncfname,list(tmp_def,forecast_def,tmp_mean_def,tmp_upper_def,tmp_lower_def,x_def,par1_def,par2_def,par3_def,x_prior_def,obs_def),force_v4=T)
   }
   
   # create netCDF file and put arrays
@@ -142,7 +142,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,the_depths_init,save_file_name,
   
   ncvar_put(ncout,x_prior_def,as.matrix(x_prior))
   
-  ncvar_put(ncout,Qt_restart_def,as.matrix(Qt_restart))
+  #ncvar_put(ncout,Qt_restart_def,as.matrix(Qt_restart))
   
   ncvar_put(ncout,obs_def,obs)
   

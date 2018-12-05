@@ -38,7 +38,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   
   TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time_past,depths = the_depths_init,TempObservedDepths = TempObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  obs_temp_past <- extract_temp_chain(fname = catwalk_fname,full_time_past,depths = the_depths_init,observed_depths_temp = TempObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
   for(i in 1:length(obs_temp_past$obs[,1])){
     for(j in 1:length(obs_temp_past$obs[1,])){
       if(obs_temp_past$obs[i,j] == 0 | is.na(obs_temp_past$obs[i,j]) | is.nan(obs_temp_past$obs[i,j])){
@@ -49,12 +49,12 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   
   #PROCESS DO OBSERVATIONS
   DoObservedDepths <- c(1,5,9)
-  obs_do <- extract_do_chain(fname = catwalk_fname,full_time = full_time_past,depths = the_depths_init,DoObservedDepths= DoObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  obs_do <- extract_do_chain(fname = catwalk_fname,full_time = full_time_past,depths = the_depths_init,observed_depths_do= DoObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
   obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
   init_do1 <- obs_do$obs[1,]
   
   Chla_fDOM_ObservedDepths <- 1
-  obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time = full_time_past,depths = the_depths_init,Chla_fDOM_ObservedDepths= Chla_fDOM_ObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
+  obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time = full_time_past,depths = the_depths_init,observed_depths_chla_fdom= Chla_fDOM_ObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   #Use the CTD observation rather than the sensor string when CTD data is avialable
   if(USE_CTD){

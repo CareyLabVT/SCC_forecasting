@@ -40,7 +40,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   obs_error <- 0.0001 #NEED TO DOUBLE CHECK
 
   #Define modeled depths and depths with observations
-  the_depths_init <- c(0.1, 0.33, 0.66, 
+  modeled_depths <- c(0.1, 0.33, 0.66, 
                        1.00, 1.33,1.66,
                        2.00,2.33,2.66,
                        3.0,3.33,3.66,
@@ -51,9 +51,9 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                        8.0,8.33,8.66,
                        9.00,9.33)
   
-  TempObservedDepths <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
-  DoObservedDepths <- c(1,5,9)
-  Chla_fDOM_ObservedDepths <- 1
+  observed_depths_temp <- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8,9)
+  observed_depths_do <- c(1,5,9)
+  observed_depths_chla_fdom <- 1
   
   temp_obs_fname <- 'Catwalk.csv'
   met_obs_fname <- 'FCRmet.csv'
@@ -67,6 +67,19 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                 'OGM_doc','OGM_poc','OGM_don','OGM_pon','OGM_dop','OGM_pop',
                 'PHY_CYANOPCH1','PHY_CYANONPCH2','PHY_CHLOROPCH3','PHY_DIATOMPCH4',
                 'ZOO_COPEPODS1','ZOO_DAPHNIABIG2','ZOO_DAPHNIASMALL3')
+  
+  local_tzone <- 'EST5EDT'
+  
+  #Pull from Github
+  temperature_location <- paste0(data_location,'/','mia-data')
+  setwd(temperature_location)
+  system(paste0('git pull'))
+  met_station_location <- paste0(data_location,'/','carina-data')
+  setwd(met_station_location)
+  system(paste0('git pull'))
+  noaa_location <- paste0(data_location,'/','noaa-data')
+  setwd(noaa_location)
+  system(paste0('git pull'))
   
   #################################################
   ### OPTIONS TO ISOLATE COMPONENTS OF UNCERTAINITY
@@ -141,7 +154,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   }
   
   ####################################################
-  #### YOU WON'T NEED TO MODIFY ANYTHING BELOW HERE ##
+  #### CODE TO ORGANIZE DATA FOR EnKF ##
   ####################################################
   
   # SET UP NUMBER OF ENSEMBLE MEMBERS
@@ -183,18 +196,18 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     forecast_month <- paste0(month(forecast_start_time))
   }
   full_time <- seq(begin_sim, end_sim, by = "1 day") # grid
-  full_time_local <- with_tz(full_time,tzone = 'EST5EDT')
+  full_time_local <- with_tz(full_time,tzone = local_tzone)
   full_time <- strftime(full_time, format="%Y-%m-%d %H:%M",tz = reference_tzone)
-  full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M",tz = 'EST5EDT')
+  full_time_local <- strftime(full_time_local, format="%Y-%m-%d %H:%M",tz = local_tzone)
   full_time_day <- strftime(full_time, format="%Y-%m-%d",tz = reference_tzone)
-  full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d",tz = 'EST5EDT')
+  full_time_day_local <- strftime(full_time_local, format="%Y-%m-%d",tz = local_tzone)
   full_time_hour_obs <- seq(as.POSIXct(full_time[1],tz = reference_tzone), as.POSIXct(full_time[length(full_time)],tz = reference_tzone), by = "1 hour") # grid
   nsteps <- length(full_time)
   
   ###CREATE DIRECTORY PATHS AND STRUCTURE
   workingGLM <- paste0(Folder,'/','GLM_working')  
-  print(workingGLM)
-  unlink(paste0(workingGLM,'/*'),recursive = FALSE)    #Clear out temp GLM working directory
+  ####Clear out temp GLM working directory
+  unlink(paste0(workingGLM,'/*'),recursive = FALSE)    
   
   ###LOAD SHARE R FUNCTIONS
   source(paste0(Folder,'/','Rscripts/mcmc_enkf_shared_functions.R'))
@@ -206,28 +219,17 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   source(paste0(Folder,'/','Rscripts/plot_forecast_netcdf.R'))
   source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   source(paste0(Folder,'/','Rscripts/write_forecast_netcdf.R')) 
-  
-  ###DOWNLOAD FILES TO WORKING DIRECTORY
-  mia_location <- paste0(data_location,'/','mia-data')
-  setwd(mia_location)
-  system(paste0('git pull'))
-  carina_location <- paste0(data_location,'/','carina-data')
-  setwd(carina_location)
-  system(paste0('git pull'))
-  noaa_location <- paste0(data_location,'/','noaa-data')
-  setwd(noaa_location)
-  system(paste0('git pull'))
+  source(paste0(Folder,'/','Rscripts/GLM_EnKF.R')) 
   
   ###SET FILE NAMES
   forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
   temp_obs_fname_wdir <-  paste0(workingGLM,'/',temp_obs_fname)
-  met_obs_fname_wdir <-paste0(carina_location,'/',met_obs_fname)
+  met_obs_fname_wdir <-paste0(met_station_location,'/',met_obs_fname)
   met_forecaset_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
   if(is.na(sim_name)){
     sim_name <- paste0(year(full_time_local[1]),'_',month(full_time_local[1]),'_',day(full_time_local[1]))
   }
   
-
   #download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
   #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/',temp_obs_fname))
   #download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
@@ -249,7 +251,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       met_file_names[1+i] <- paste0(met_forecaset_base_file_name,i,'.csv')
     }
   }
-  
+
   ###MOVE FILES AROUND
   SimFilesFolder <- paste0(Folder,'/','sim_files')
   GLM_folder <- paste0(Folder,'/','glm','/',machine) 
@@ -264,12 +266,6 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     fl <- c(list.files('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/', full.names = TRUE))
     tmp <- file.copy(from = fl, to = workingGLM,overwrite = TRUE)
   }
-  
-  ##CREATE INFLOW AND OUTFILE FILES
-  if(!PRE_SCC){
-    create_inflow_outflow_file(full_time = full_time_day,workingGLM = workingGLM, input_tz = 'EST5EDT', output_tz = reference_tzone )
-  }
-  
   if(include_wq){
     file.copy(from = paste0(workingGLM,'/','glm3_wAED.nml'), to = paste0(workingGLM,'/','glm3.nml'),overwrite = TRUE)
   }else{
@@ -280,10 +276,15 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     }
   }
   
+  ##CREATE INFLOW AND OUTFILE FILES
+  if(!PRE_SCC){
+    create_inflow_outflow_file(full_time = full_time_day,workingGLM = workingGLM, input_tz = 'EST5EDT', output_tz = reference_tzone )
+  }
+  
   ###SET UP RUN
   
   #DEFINE DEPTHS THAT ARE MODELED
-  nlayers_init <- length(the_depths_init)
+  ndepths_modeled <- length(modeled_depths)
   
   #DEFINE WATER QUALITY VARIABLES
   num_wq_vars <- length(wq_names) 
@@ -345,9 +346,9 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
                     ZOO_COPEPODS1_error,ZOO_DAPHNIABIG2_error,ZOO_DAPHNIASMALL3_error)
   
   #Extract observations
-  temp_obs_fname_wdir <- paste0(mia_location,'/',temp_obs_fname)
+  temp_obs_fname_wdir <- paste0(temperature_location,'/',temp_obs_fname)
   #PROCESS TEMPERATURE OBSERVATIONS
-  obs_temp <- extract_temp_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,TempObservedDepths = TempObservedDepths,
+  obs_temp <- extract_temp_chain(fname = temp_obs_fname_wdir,full_time,depths = modeled_depths,observed_depths_temp = observed_depths_temp,
                                  input_tz = 'EST5EDT', output_tz = reference_tzone)
   for(i in 1:length(obs_temp$obs[,1])){
     for(j in 1:length(obs_temp$obs[1,])){
@@ -360,12 +361,12 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   init_temps <- obs_temp$obs[1,]
   
   #PROCESS DO OBSERVATIONS
-  obs_do <- extract_do_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,DoObservedDepths= DoObservedDepths,
+  obs_do <- extract_do_chain(fname = temp_obs_fname_wdir,full_time,depths = modeled_depths,observed_depths_do= observed_depths_do,
                              input_tz = 'EST5EDT', output_tz = reference_tzone)
   obs_do$obs <- obs_do$obs*1000/32  #mg/L (obs units) -> mmol/m3 (glm units)
   init_do1 <- obs_do$obs[1,]
   
-  obs_chla_fdom <- extract_chla_chain(fname = temp_obs_fname_wdir,full_time,depths = the_depths_init,Chla_fDOM_ObservedDepths= Chla_fDOM_ObservedDepths,
+  obs_chla_fdom <- extract_chla_chain(fname = temp_obs_fname_wdir,full_time,depths = modeled_depths,observed_depths_chla_fdom= observed_depths_chla_fdom,
                                       input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   #Use the CTD observation rather than the sensor string when CTD data is avialable
@@ -373,7 +374,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     ## LOOK AT CTD DATA
     fl <- c(list.files('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/', pattern = 'CTD', full.names = TRUE))
     #NEED TO DOUBLE CHECK TIME ZONE
-    obs_ctd <- extract_temp_CTD(fname = fl[1],full_time_day_local,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
+    obs_ctd <- extract_temp_CTD(fname = fl[1],full_time_day_local,depths = modeled_depths,input_tz = 'EST5EDT', output_tz = reference_tzone)
     obs_ctd$obs_do <- obs_ctd$obs_do*1000/32
     for(i in 1:length(full_time_day)){
       if(!is.na(obs_ctd$obs_temp[i,1])){
@@ -383,17 +384,17 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       }
     }
     init_pH_obs <- obs_ctd$obs_pH[1,which(!is.na(obs_ctd$obs_pH[1,]))]
-    init_obs_pH_depths <- the_depths_init[which(!is.na(obs_ctd$obs_pH[1,]))]
+    init_obs_pH_depths <- modeled_depths[which(!is.na(obs_ctd$obs_pH[1,]))]
     
     init_sal_obs <- obs_ctd$obs_sal[1,which(!is.na(obs_ctd$obs_sal[1,]))]
-    init_obs_sal_depths <- the_depths_init[which(!is.na(obs_ctd$obs_sal[1,]))]
+    init_obs_sal_depths <- modeled_depths[which(!is.na(obs_ctd$obs_sal[1,]))]
   }
   
   init_temps_obs <- obs_temp$obs[1,which(!is.na(obs_temp$obs[1,]))]
-  init_obs_temp_depths <- the_depths_init[which(!is.na(obs_temp$obs[1,]))]
+  init_obs_temp_depths <- modeled_depths[which(!is.na(obs_temp$obs[1,]))]
   
   init_do_obs <- obs_do$obs[1,which(!is.na(obs_do$obs[1,]))]
-  init_obs_do_depths <- the_depths_init[which(!is.na(obs_do$obs[1,]))]
+  init_obs_do_depths <- modeled_depths[which(!is.na(obs_do$obs[1,]))]
   
   #NEED AN ERROR CHECK FOR WHETHER THERE ARE OBSERVED DATA
   if(is.na(restart_file)){
@@ -402,31 +403,32 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       break
     }
     temp_inter <- approxfun(init_obs_temp_depths,init_temps_obs,rule=2)
-    the_temps_init <- temp_inter(the_depths_init)
+    the_temps_init <- temp_inter(modeled_depths)
     if(include_wq){
       do_inter <- approxfun(init_obs_do_depths,init_do_obs,rule=2)
-      do_init <- do_inter(the_depths_init)
+      do_init <- do_inter(modeled_depths)
       if(length(which(!is.na(init_pH_obs)))>0){
         pH_inter <- approxfun(init_obs_pH_depths,init_pH_obs,rule=2)
-        pH_init <- pH_inter(the_depths_init)
+        pH_init <- pH_inter(modeled_depths)
       }
     }
   }
   
   #SET UP INITIAL CONDITIONS
-  
+  wq_start <- NA
+  wq_end <- NA
   if(include_wq){
     temp_start <- 1
-    temp_end <- length(the_depths_init)
+    temp_end <- length(modeled_depths)
     wq_start <- rep(NA,num_wq_vars)
     wq_end <- rep(NA,num_wq_vars)
     for(wq in 1:num_wq_vars){
       if(wq == 1){
         wq_start[wq] <- temp_end+1
-        wq_end[wq] <- temp_end + (length(the_depths_init))
+        wq_end[wq] <- temp_end + (length(modeled_depths))
       }else{
         wq_start[wq] <- wq_end[wq-1]+1
-        wq_end[wq] <- wq_end[wq-1] + (length(the_depths_init))
+        wq_end[wq] <- wq_end[wq-1] + (length(modeled_depths))
       }
       
       if(npars > 0){ #NEED TO GENERALIZE
@@ -442,7 +444,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     }
   }else{
     temp_start <- 1
-    temp_end <- length(the_depths_init)
+    temp_end <- length(modeled_depths)
     if(npars > 0){
       par1 <- temp_end + 1
       par2 <- par1 + 1
@@ -456,72 +458,72 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   #UPDATE NML WITH PARAMETERS AND INITIAL CONDITIONS
   if(include_wq){
-    OXY_oxy_init_depth <- do_init #rep(OXY_oxy_init,nlayers_init)
+    OXY_oxy_init_depth <- do_init #rep(OXY_oxy_init,ndepths_modeled)
   }else{
-    OXY_oxy_init_depth <- rep(OXY_oxy_init,nlayers_init)    
+    OXY_oxy_init_depth <- rep(OXY_oxy_init,ndepths_modeled)    
   }
   if(include_wq & USE_CTD){
     CAR_pH_init_depth <- pH_init
   }else{
-    CAR_pH_init_depth <- rep(CAR_pH_init,nlayers_init) 
+    CAR_pH_init_depth <- rep(CAR_pH_init,ndepths_modeled) 
   }
   
-  CAR_dic_init_depth <- rep(CAR_dic_init,nlayers_init)
-  CAR_ch4_init_depth <- rep(CAR_ch4_init,nlayers_init)
-  SIL_rsi_init_depth <- rep(SIL_rsi_init,nlayers_init)
-  NIT_amm_init_depth <- rep(NIT_amm_init,nlayers_init)
-  NIT_nit_init_depth <- rep(NIT_nit_init,nlayers_init)
-  PHS_frp_init_depth <- rep(PHS_frp_init,nlayers_init)
-  OGM_doc_init_depth <- rep(OGM_doc_init,nlayers_init)
-  OGM_poc_init_depth <- rep(OGM_poc_init,nlayers_init)
-  OGM_don_init_depth <- rep(OGM_don_init,nlayers_init)
-  OGM_pon_init_depth <- rep(OGM_pon_init,nlayers_init)
-  OGM_dop_init_depth <- rep(OGM_dop_init,nlayers_init)
-  OGM_pop_init_depth <- rep(OGM_pop_init,nlayers_init)
-  PHY_CYANOPCH1_init_depth <- rep(PHY_CYANOPCH1_init,nlayers_init)
-  PHY_CYANONPCH2_init_depth <- rep(PHY_CYANONPCH2_init,nlayers_init)
-  PHY_CHLOROPCH3_init_depth <- rep(PHY_CHLOROPCH3_init,nlayers_init)
-  PHY_DIATOMPCH4_init_depth <- rep(PHY_DIATOMPCH4_init,nlayers_init)
-  ZOO_COPEPODS1_init_depth <- rep(ZOO_COPEPODS1_init,nlayers_init)
-  ZOO_DAPHNIABIG2_init_depth <- rep(ZOO_DAPHNIABIG2_init,nlayers_init)
-  ZOO_DAPHNIASMALL3_init_depth <- rep(ZOO_DAPHNIASMALL3_init,nlayers_init)
+  CAR_dic_init_depth <- rep(CAR_dic_init,ndepths_modeled)
+  CAR_ch4_init_depth <- rep(CAR_ch4_init,ndepths_modeled)
+  SIL_rsi_init_depth <- rep(SIL_rsi_init,ndepths_modeled)
+  NIT_amm_init_depth <- rep(NIT_amm_init,ndepths_modeled)
+  NIT_nit_init_depth <- rep(NIT_nit_init,ndepths_modeled)
+  PHS_frp_init_depth <- rep(PHS_frp_init,ndepths_modeled)
+  OGM_doc_init_depth <- rep(OGM_doc_init,ndepths_modeled)
+  OGM_poc_init_depth <- rep(OGM_poc_init,ndepths_modeled)
+  OGM_don_init_depth <- rep(OGM_don_init,ndepths_modeled)
+  OGM_pon_init_depth <- rep(OGM_pon_init,ndepths_modeled)
+  OGM_dop_init_depth <- rep(OGM_dop_init,ndepths_modeled)
+  OGM_pop_init_depth <- rep(OGM_pop_init,ndepths_modeled)
+  PHY_CYANOPCH1_init_depth <- rep(PHY_CYANOPCH1_init,ndepths_modeled)
+  PHY_CYANONPCH2_init_depth <- rep(PHY_CYANONPCH2_init,ndepths_modeled)
+  PHY_CHLOROPCH3_init_depth <- rep(PHY_CHLOROPCH3_init,ndepths_modeled)
+  PHY_DIATOMPCH4_init_depth <- rep(PHY_DIATOMPCH4_init,ndepths_modeled)
+  ZOO_COPEPODS1_init_depth <- rep(ZOO_COPEPODS1_init,ndepths_modeled)
+  ZOO_DAPHNIABIG2_init_depth <- rep(ZOO_DAPHNIABIG2_init,ndepths_modeled)
+  ZOO_DAPHNIASMALL3_init_depth <- rep(ZOO_DAPHNIASMALL3_init,ndepths_modeled)
   
   #if(full_time_day_local[1] == as.data.frame.POSIXct('201')
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
   #mg/L
   #curr_values <- c(3.764, 3.781, 3.578, 5.156, 5.2735, 5.5165, 5.222, 5.368)
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #CAR_dic_init_depth <- inter(the_depths_init)
+  #CAR_dic_init_depth <- inter(modeled_depths)
   
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8,9,9.5)
   #umol CH4/L
   #curr_values <- c(3.91E-04,0.370572728,0.107597836,0.126096596,0.088502664,0.086276629,0.07256043,0.07249431)
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #CAR_ch4_init_depth <- inter(the_depths_init)
+  #CAR_ch4_init_depth <- inter(modeled_depths)
   
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
   #curr_values <- c(12.65291714,4.213596723,10.5935375,13.43611258,11.34765394,11.95676704,11.98577285,12.82695814)
   #ug/L
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #NIT_amm_init_depth <- inter(the_depths_init)
+  #NIT_amm_init_depth <- inter(modeled_depths)
   
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
   #curr_values <-c(5.68,3.82,4.46,3.71,4.18,5.08,3.01,7.72)
   #ug/L
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #NIT_nit_init_depth <- inter(the_depths_init)
+  #NIT_nit_init_depth <- inter(modeled_depths)
   
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
   #ug/L
   #curr_values <- c(8.96,7.66,6.26,6.22,7.72,9.69,7.95,10.5)
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #PHS_frp_init_depth <- inter(the_depths_init)
+  #PHS_frp_init_depth <- inter(modeled_depths)
   
   #curr_depths <- c(0.1,1.6,3.8,5,6.2,8, 9, 10)
   ##mg/L
   #curr_values <- c(4.2315,4.374, 3.2655,2.9705,2.938,2.922,2.773,2.9525)
   #inter <- approxfun(curr_depths,curr_values,rule=2)
-  #OGM_poc_init_depth <- inter(the_depths_init)
+  #OGM_poc_init_depth <- inter(modeled_depths)
   
   #}else{
   
@@ -557,26 +559,29 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     update_var(' ','wq_init_vals',workingGLM)
     update_var(0,'num_wq_vars',workingGLM)
   }
-  update_var(nlayers_init,'num_depths',workingGLM)
-  update_var(the_depths_init,'the_depths',workingGLM)
-  update_var(rep(the_sals_init,nlayers_init),'the_sals',workingGLM)
+  update_var(ndepths_modeled,'num_depths',workingGLM)
+  update_var(modeled_depths,'the_depths',workingGLM)
+  update_var(rep(the_sals_init,ndepths_modeled),'the_sals',workingGLM)
+  
+  #Create a copy of the NML to record starting parameters
+  file.copy(from = paste0(workingGLM,'/','glm3.nml'), to = paste0(workingGLM,'/','glm3_initial.nml'),overwrite = TRUE)
   
   #NUMBER OF STATE SIMULATED = SPECIFIED DEPTHS
   if(include_wq){
-    nstates <- nlayers_init*(1+num_wq_vars)
+    nstates <- ndepths_modeled*(1+num_wq_vars)
   }else{
-    nstates <- nlayers_init
+    nstates <- ndepths_modeled
   }
   
   if(include_wq){
-    nobs <- length(TempObservedDepths) + length(DoObservedDepths)
+    nobs <- length(observed_depths_temp) + length(observed_depths_do) #NEED TO FIX
   }else{
-    nobs <- length(TempObservedDepths)
+    nobs <- length(observed_depths_temp)
   }
   
   #Observations for each observed state at each time step
   #an observation with at least 1 observation but without an observation in a time-step gets assigned an NA
-  #z <- t(matrix(rep(NA,nobs), nrow = nobs, ncol = nsteps))
+
   if(include_wq){
     z <- cbind(obs_temp$obs,obs_do$obs)
   }else{
@@ -590,14 +595,14 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   #FIGURE OUT WHICH DEPTHS HAVE OBSERVATIONS
   if(include_wq){
-    obs_index <- rep(NA,length(the_depths_init)*(num_wq_vars+1))
-    obs_index[1:length(the_depths_init)] <- seq(1,length(the_depths_init),1)
+    obs_index <- rep(NA,length(modeled_depths)*(num_wq_vars+1))
+    obs_index[1:length(modeled_depths)] <- seq(1,length(modeled_depths),1)
     for(wq in 1:num_wq_vars){
       obs_index[wq_start[wq]:wq_end[wq]] <- seq(wq_start[wq],wq_end[wq],1)
     }
   }else{
-    obs_index <- rep(NA,length(the_depths_init))
-    obs_index[1:length(the_depths_init)] <- seq(1,length(the_depths_init),1)
+    obs_index <- rep(NA,length(modeled_depths))
+    obs_index[1:length(modeled_depths)] <- seq(1,length(modeled_depths),1)
   }
   
   #Matrix for knowing which state the observation corresponds to
@@ -612,7 +617,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   
   if(include_wq){
     for(i in 1:num_wq_vars){
-      for(j in 1:nlayers_init){
+      for(j in 1:ndepths_modeled){
         Qt <- rbind(Qt,rep(0.0,ncol(Qt)))
         Qt <- cbind(Qt,rep(0.0,nrow(Qt)))
         Qt[ncol(Qt),nrow(Qt)] <- wq_var_error[i]
@@ -737,277 +742,45 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   surface_height <- array(NA,dim=c(nsteps,nmembers))
   surface_height[1,] <- lake_depth_init
   
-  #Create a copy of the NML to record starting parameters
-  file.copy(from = paste0(workingGLM,'/','glm3.nml'), to = paste0(workingGLM,'/','glm3_initial.nml'),overwrite = TRUE)
+  ####################################################
+  #### EnKF        ##
+  ####################################################
   
-  #needs
-  #nsteps
-  #full_time
-  #workingGLM
-  #nmembers
-  #nstates
-  #npars
-  #x
-  #the_depths_init
-  #surface_height
-  #Qt_pars
-  #wq_start
-  #wq_end
-  #met_file_names
-  #include_wq
-  #nMETmembers
-  #WEATHER_UNCERTAINITY
-  #Qt
-  #spin_up_days
-  #z
-  #z_states
-  #psi
-  #alpha
+  enkf_output <- GLM_EnKF(
+    nsteps,
+    full_time,
+    workingGLM,
+    nmembers,
+    nstates,
+    npars,
+    x,
+    modeled_depths,
+    surface_height,
+    Qt_pars,
+    wq_start,
+    wq_end,
+    met_file_names,
+    include_wq,
+    nMETmembers,
+    Qt,
+    spin_up_days,
+    z,
+    z_states,
+    psi,
+    alpha,
+    WEATHER_UNCERTAINITY,
+    PROCESS_UNCERTAINITY,
+    INITIAL_CONDITION_UNCERTAINITY,
+    PARAMETER_UNCERTAINITY)
   
-  #returns
+  x <- enkf_output$x
+  x_restart <- enkf_output$x_restart
+  Qt_restart <- enkf_output$Qt_restart
+  x_prior <- enkf_output$x_prior
   
-  
-  ###START EnKF
-  met_index <- 1
-  for(i in 2:nsteps){
-    
-    #1) Update GLM NML files to match the current day of the simulation
-    curr_start <- (full_time[i-1])
-    curr_stop <- (full_time[i])
-    update_time(start_value  = curr_start, stop_value = curr_stop,workingGLM)
-    setwd(workingGLM)
-    
-    #Create array to hold GLM predictions for each ensemble
-    x_star <- array(NA, dim = c(nmembers,nstates))
-    x_corr <- array(NA, dim = c(nmembers,nstates))
-    pars_corr <-  array(NA, dim = c(nmembers,npars))
-    #Matrix to store calculated ensemble specific deviations and innovations
-    dit <- array(NA,dim=c(nmembers,nstates))
-    dit_pars<- array(NA,dim=c(nmembers,npars))
-    
-    for(m in 1:nmembers){
-      
-      tmp <- update_temps(curr_temps = round(x[i-1,m,temp_start:temp_end],3),the_depths_init,workingGLM)
-      update_var(surface_height[i-1,m],'lake_depth',workingGLM)
-      if(npars > 0){
-        if(i > (hist_days+1)){
-          new_pars <- x[i-1,m,(nstates+1):(nstates+npars)]
-          if(PARAMETER_UNCERTAINITY == FALSE){
-            new_pars <- mean(x[i-1,,(nstates+1):(nstates+npars)])
-          }
-        }else{
-          new_pars <- rmvnorm(n=1, mean = c(x[i-1,m,(nstates+1):(nstates+npars)]),sigma=as.matrix(Qt_pars))
-        }
-        
-        update_var(c(round(new_pars[1],3),round(new_pars[2],3)),'sed_temp_mean',workingGLM)
-        update_var(round(new_pars[3],3),'sw_factor',workingGLM)
-        update_var(round(new_pars[3],3),'lw_factor',workingGLM)
-        pars_corr[m,] <- new_pars
-      }
-      
-      if(include_wq){
-        wq_init_vals <- round(c(x[i-1,m,wq_start[1]:wq_end[num_wq_vars]]),3)
-        update_var(wq_init_vals,'wq_init_vals',workingGLM)
-      }
-      
-      
-      #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
-      if(i > (hist_days+1)){
-          update_var(met_file_names[1+met_index],'meteo_fl',workingGLM)
-          update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
-          update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
-        }else{
-          update_var(met_file_names[1],'meteo_fl',workingGLM)
-          update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
-          update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
-      }
-      
-      #Use GLM NML files to run GLM for a day
-      # Only allow simulations without NaN values in the output to proceed.  Necessary due to random
-      # Nan in AED output
-      pass <- FALSE
-      num_reruns <- 0
-      
-      while(!pass){
-        unlink(paste0(workingGLM,'/output.nc')) 
-        system(paste0(workingGLM,'/','glm'))
-        
-        if(file.exists(paste0(workingGLM,'/output.nc')) & !has_error(nc<-nc_open('output.nc'))){
-          if(length(ncvar_get(nc,'time')) > 1){
-            nc_close(nc)
-            if(include_wq){
-              GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = glm_output_vars)
-              x_star[m,1:(nstates-npars)] <- c(GLM_temp_wq_out$output)
-            }else{
-              GLM_temp_wq_out <- get_glm_nc_var_all_wq(ncFile = 'output.nc',z_out = the_depths_init,vars = 'temp')
-              x_star[m,temp_start:temp_end] <- c(GLM_temp_wq_out$output)
-            }
-            
-            surface_height[i,m] <- GLM_temp_wq_out$surface_height 
-            if(length(which(is.na(x_star[m,])))==0){
-              pass = TRUE
-            }else{
-              num_reruns <- num_reruns + 1
-            }
-          }else{
-            num_reruns <- num_reruns + 1
-          }
-        }else{
-          num_reruns <- num_reruns + 1
-        }
-        if(num_reruns > 1000){
-          stop(paste0('Too many re-runs (> 1000) due to NaN values in output'))
-        }
-      }
-      
-      #INCREMENT THE MET_INDEX TO MOVE TO THE NEXT NOAA ENSEMBLE
-      met_index = met_index + 1
-      if(met_index > nMETmembers | WEATHER_UNCERTAINITY == FALSE){
-        met_index <- 1
-      }
-      
-    }
-    
-    #DEAL WITH ENSEMBLE MEMBERS THAT ARE 'BAD' AND PRODUCE NA VALUES OR HAVE NEGATIVE TEMPERATURES
-    # THIS RANDOMLY REPLACES IT WITH A GOOD ENSEMBLE MEMBER
-    if(length(which(is.na(c(x_star))))>0){
-      good_index <- NULL
-      for(m in 1:nmembers){
-        if(length(which(is.na(c(x_star[m,])))) == 0 & length(which(c(x_star[m,]) <= 0)) == 0){
-          good_index <- c(good_index,m)
-        }
-      }
-      for(m in 1:nmembers){
-        if(length(which(is.na(c(x_star[m,])))) > 0 | length(which(c(x_star[m,]) <= 0) > 0)){
-          replace_index <- sample(good_index,1)
-          x_star[m,] <- x_star[replace_index,]
-          surface_height[i,m] <- surface_height[i,replace_index]
-        }
-      }
-    }
-    
-    #Corruption [nmembers x nstates] 
-    NQt <- rmvnorm(n=nmembers, sigma=as.matrix(Qt))
-    x_corr <- x_star + NQt
-    
-    if(include_wq){
-      for(m in 1:nmembers){
-        for(wq in 1:num_wq_vars){
-          index <- which(x_corr[m,] < 0.0)
-          index <- index[which(index > wq_start[1])]
-          x_corr[m,index] <- 0.0
-        }
-      }
-    }
-    
-    x_prior[i,,] <- cbind(x_corr,pars_corr)
-    
-    if(i >= spin_up_days+1){
-      #Obs for time step
-      z_index <- which(!is.na(z[i,]))
-      
-      #if no observations at a time step then just propogate model uncertainity
-      if(length(z_index) == 0 | i > (hist_days+1)){
-        x[i,,] <- cbind(x_corr,pars_corr) 
-        if(PROCESS_UNCERTAINITY == FALSE & i > (hist_days+1)){
-          x[i,,] <- cbind(x_star,pars_corr)
-        }
-        if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
-          for(m in 1:nmembers){
-            x[i,m,] <- colMeans(cbind(x_star,pars_corr)) 
-          }
-        }
-      }else{
-        #if observation then calucate Kalman adjustment
-        zt <- z[i,z_index]
-        z_states_t <- z_states[i,z_index]
-        
-        #Assign which states have obs in the time step
-        H <- array(0,dim=c(length(zt),nstates))
-        for(j in 1:length(z_index)){
-          H[j,z_states_t[j]] <- 1
-        }
-        
-        #Extract the data uncertainity for the data types present during the time-step
-        if(length(z_index)>1){
-          psi_t <- diag(psi[z_index])
-        }else{
-          #Special case where there is only one data type during the time-step
-          psi_t <- psi[z_index]
-        }
-        
-        #Ensemble mean
-        ens_mean <- apply(x_corr, 2, mean)
-        if(npars > 0){
-          par_mean <- apply(pars_corr, 2, mean)
-        }
-        
-        N_psi = t(rmvnorm(n=1,mean = zt, sigma=as.matrix(psi_t)))
-        D_mat <- t(matrix(rep(N_psi,each=nmembers), nrow = nmembers, ncol=length(N_psi)))
-        
-        #Loop through ensemble members
-        for(m in 1:nmembers){  
-          
-          #  #Ensemble specific deviation
-          dit[m,] <- x_corr[m,]-ens_mean
-          dit_pars[m, ] <- pars_corr[m,] - par_mean
-          
-          if(m == 1){
-            Pit <- dit[m,] %*% t(dit[m,]) 
-            Pit_pars <- dit_pars[m, ] %*% t(dit[m,])
-          }else{
-            Pit <- dit[m,] %*% t(dit[m,]) +  Pit 
-            Pit_pars <- dit_pars[m, ] %*% t(dit[m,]) + Pit_pars
-          }
-        }
-        
-        #estimate covariance
-        Pt <- Pit/(nmembers-1)
-        Pt_pars <- Pit_pars/(nmembers-1)
-        #Kalman gain
-        Kt <- Pt %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
-        Kt_pars <- Pt_pars %*% t(H) %*% solve(H%*%Pt%*%t(H)+psi_t)
-        
-        #Update states array (transposes are necessary to convert between the dims here and the dims in the EnKF formulations)
-        x[i,,1:nstates] <- t(t(x_corr) + Kt%*%(D_mat - H%*%t(x_corr)))
-        for(pp in 1:npars){
-          x[i,,(nstates+pp)] <- alpha[pp]*x[i-1,,(nstates+pp)] + (1-alpha[pp])*t(t(pars_corr) + Kt_pars%*%(D_mat - H%*%t(x_corr)))[,pp]
-        }
-        
-        if(include_wq){
-          for(m in 1:nmembers){
-            for(wq in 1:num_wq_vars){
-              index <- which(x[i,m,] < 0.0)
-              index <- index[which(index > wq_start[1])]
-              x[i,m,index] <- 0.0
-            }
-          }
-        }
-        
-        #IF NO INITIAL CONDITION UNCERTAINITY THEN SET EACH ENSEMBLE MEMBER TO THE MEAN
-        #AT THE INITIATION OF THE FUTURE FORECAST
-        if(i == (hist_days+1) & INITIAL_CONDITION_UNCERTAINITY == FALSE){
-          for(m in 1:nmembers){
-            if(PARAMETER_UNCERTAINITY == FALSE){
-            x[i,m,] <- colMeans(cbind(x_star,pars_corr)) 
-            }else{
-              x[i,m,] <- cbind(colMeans(x_star),x[i,m,(nstates+1):(nstates+npars)])
-            }
-          }
-        }
-        
-        if(length(which(is.na(x[i,,]))) > 0){dies = i}
-      }
-    }else{
-      x[i,,] <- cbind(x_star,pars_corr)
-    }
-    
-    if(i == (hist_days+1)){
-      x_restart <- x[i,,]
-      Qt_restart <- Qt
-    }
-    
-  }
+  ####################################################
+  #### PROCESS OUTPUT ##
+  ####################################################
   
   if(forecast_days >0){
     save_file_name <- paste0(sim_name,'_hist_',year(full_time[1]),'_',month(full_time[1]),'_',day(full_time[1]),'_forecast_',
@@ -1024,7 +797,7 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   write_forecast_netcdf(x = x,
                         full_time = full_time_local,
                         Qt = Qt,
-                        the_depths_init = the_depths_init,
+                        modeled_depths = modeled_depths,
                         save_file_name = save_file_name,
                         x_restart=x_restart,
                         Qt_restart = Qt_restart,
