@@ -207,15 +207,6 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   source(paste0(Folder,'/','Rscripts/archive_forecast.R'))
   source(paste0(Folder,'/','Rscripts/write_forecast_netcdf.R')) 
   
-  ###SET FILE NAMES
-  forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
-  temp_obs_fname_wdir <-  paste0(workingGLM,'/',temp_obs_fname)
-  met_obs_fname_wdir <-paste0(workingGLM,'/',met_obs_fname)
-  met_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
-  if(is.na(sim_name)){
-    sim_name <- paste0(year(full_time_local[1]),'_',month(full_time_local[1]),'_',day(full_time_local[1]))
-  }
-  
   ###DOWNLOAD FILES TO WORKING DIRECTORY
   mia_location <- paste0(data_location,'/','mia-data')
   setwd(mia_location)
@@ -227,13 +218,25 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   setwd(noaa_location)
   system(paste0('git pull'))
   
+  ###SET FILE NAMES
+  forecast_base_name <- paste0(year(forecast_start_time),forecast_month,forecast_day,'gep_all_00z')
+  temp_obs_fname_wdir <-  paste0(workingGLM,'/',temp_obs_fname)
+  met_obs_fname_wdir <-paste0(carina_location,'/',met_obs_fname)
+  met_forecaset_base_file_name <- paste0('met_hourly_',forecast_base_name,'_ens')
+  if(is.na(sim_name)){
+    sim_name <- paste0(year(full_time_local[1]),'_',month(full_time_local[1]),'_',day(full_time_local[1]))
+  }
+  
+
   #download.file('https://github.com/CareyLabVT/SCCData/raw/carina-data/FCRmet.csv',paste0(workingGLM,'/','FCRmet.csv'))
   #download.file('https://github.com/CareyLabVT/SCCData/raw/mia-data/Catwalk.csv',paste0(workingGLM,'/',temp_obs_fname))
   #download.file(paste0('https://github.com/CareyLabVT/SCCData/raw/noaa-data/',forecast_base_name,'.csv'),paste0(workingGLM,'/',forecast_base_name,'.csv'))
   
   ###CREATE HISTORICAL MET FILE
+  met_file_names <- rep(NA,1+nMETmembers)
   obs_met_outfile <- paste0(workingGLM,'/','GLM_met.csv')
   create_obs_met_input(fname = met_obs_fname_wdir,outfile=obs_met_outfile,full_time_hour_obs, input_tz = 'EST5EDT', output_tz = reference_tzone)
+  met_file_names[1] <- obs_met_outfile
   
   ###CREATE FUTURE MET FILES
   if(forecast_days >0 ){
@@ -242,9 +245,8 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
     file_name <- forecast_base_name
     #NEED TO DOUBLE CHECK THE INPUT_TZ AND WHY IT IS EST
     process_GEFS2GLM(in_directory,out_directory,file_name, input_tz = 'EST5EDT', output_tz = reference_tzone)
-    met_file_names <- rep(NA,nMETmembers)
     for(i in 1:nMETmembers){
-      met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
+      met_file_names[1+i] <- paste0(met_forecaset_base_file_name,i,'.csv')
     }
   }
   
@@ -738,6 +740,33 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
   #Create a copy of the NML to record starting parameters
   file.copy(from = paste0(workingGLM,'/','glm3.nml'), to = paste0(workingGLM,'/','glm3_initial.nml'),overwrite = TRUE)
   
+  #needs
+  #nsteps
+  #full_time
+  #workingGLM
+  #nmembers
+  #nstates
+  #npars
+  #x
+  #the_depths_init
+  #surface_height
+  #Qt_pars
+  #wq_start
+  #wq_end
+  #met_file_names
+  #include_wq
+  #nMETmembers
+  #WEATHER_UNCERTAINITY
+  #Qt
+  #spin_up_days
+  #z
+  #z_states
+  #psi
+  #alpha
+  
+  #returns
+  
+  
   ###START EnKF
   met_index <- 1
   for(i in 2:nsteps){
@@ -783,16 +812,14 @@ run_forecast<-function(start_day= '2018-07-06 00:00:00',
       
       
       #ALLOWS THE LOOPING THROUGH NOAA ENSEMBLES
-      if(!PRE_SCC){
-        if(i > (hist_days+1)){
-          update_var(met_file_names[met_index],'meteo_fl',workingGLM)
+      if(i > (hist_days+1)){
+          update_var(met_file_names[1+met_index],'meteo_fl',workingGLM)
           update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
           update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
         }else{
-          update_var(obs_met_outfile,'meteo_fl',workingGLM)
+          update_var(met_file_names[1],'meteo_fl',workingGLM)
           update_var(paste0('FCR_inflow.csv'),'inflow_fl',workingGLM)
           update_var(paste0('FCR_spillway_outflow.csv'),'outflow_fl',workingGLM)
-        }
       }
       
       #Use GLM NML files to run GLM for a day
