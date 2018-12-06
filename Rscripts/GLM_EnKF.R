@@ -34,7 +34,7 @@ GLM_EnKF <- function(x,
     #1) Update GLM NML files to match the current day of the simulation
     curr_start <- (full_time[i - 1])
     curr_stop <- (full_time[i])
-    update_time(start_value  = curr_start, stop_value = curr_stop, working_glm)
+
     setwd(working_glm)
     
     #Create array to hold GLM predictions for each ensemble
@@ -48,9 +48,9 @@ GLM_EnKF <- function(x,
     for(m in 1:nmembers){
       
       tmp <- update_temps(curr_temps = round(x[i - 1, m, 1:length(modeled_depths)], 3),
-                          modeled_depths,
+                          curr_depths = modeled_depths,
                           working_glm)
-      update_var(surface_height[i-1, m], "lake_depth", working_glm)
+      update_var(surface_height[i - 1, m], "lake_depth", working_glm)
       if(npars > 0){
         if(i > (hist_days + 1)){
           new_pars <- x[i - 1, m, (nstates + 1):(nstates+npars)]
@@ -88,6 +88,7 @@ GLM_EnKF <- function(x,
         update_var(paste0("FCR_spillway_outflow.csv"), "outflow_fl", working_glm)
       }
       
+      update_time(start_value  = curr_start, stop_value = curr_stop, working_glm)
       #Use GLM NML files to run GLM for a day
       # Only allow simulations without NaN values in the output to proceed. 
       #Necessary due to random Nan in AED output
