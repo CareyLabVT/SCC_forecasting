@@ -26,7 +26,7 @@ reference_tzone <- "GMT"
 n_enkf_members <- 50
 include_wq <- FALSE
 use_ctd <- FALSE
-source(paste0(folder,"/","Rscripts/EnKF_GLM_wNOAAens_V2.R"))
+source(paste0(folder,"/","Rscripts/run_enkf_forecast.R"))
 source(paste0(folder,"/","Rscripts/evaluate_forecast.R"))
 source(paste0(folder,"/","Rscripts/plot_forecast_management.R"))
 source(paste0(folder,"/","Rscripts/plot_forecast_netcdf.R"))
