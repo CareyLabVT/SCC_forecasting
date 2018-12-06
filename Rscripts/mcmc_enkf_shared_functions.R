@@ -1,17 +1,17 @@
 #FUNCTIONS Shared between the MCMC and EnKF
 
 #Set GLM Initial conditions for temperature at each layer from first observations
-update_temps <- function(curr_temps,curr_depths,workingGLM){
-  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
+update_temps <- function(curr_temps,curr_depths,working_glm){
+  orig_nml = read_nml(paste0(working_glm,'/','glm3.nml'))
   index1 = NA; index2 = NA;index3 = NA; index4 = NA
-  for (g in 1:length(origNML)) {
-    for (q in 1:length(origNML[[g]])) {
-      if (names(origNML[[g]][q]) == "the_temps") {
-        temps = as.numeric(as.character(unlist(origNML[[g]][q])))
+  for (g in 1:length(orig_nml)) {
+    for (q in 1:length(orig_nml[[g]])) {
+      if (names(orig_nml[[g]][q]) == "the_temps") {
+        temps = as.numeric(as.character(unlist(orig_nml[[g]][q])))
         index1 = g; index2 = q; 
       }
-      if (names(origNML[[g]][q]) == "the_depths") {
-        depths = as.numeric(as.character(unlist(origNML[[g]][q])))
+      if (names(orig_nml[[g]][q]) == "the_depths") {
+        depths = as.numeric(as.character(unlist(orig_nml[[g]][q])))
         index3 = g; index4 = q
       }
     }
@@ -19,52 +19,52 @@ update_temps <- function(curr_temps,curr_depths,workingGLM){
   temp_inter = approxfun(curr_depths,curr_temps,rule=2)
   init_temps = temp_inter(depths)
   char_temps = paste(init_temps, collapse = ', ')
-  holder2 = unlist(origNML[[index1]][index2])
+  holder2 = unlist(orig_nml[[index1]][index2])
   holder2[1:length(holder2)] = init_temps
   holder2 = list(holder2)
-  holder3 = unlist(origNML[[index3]][index4])
+  holder3 = unlist(orig_nml[[index3]][index4])
   holder3[1:length(holder3)] = depths
   holder3 = list(holder3)
-  origNML[[index1]][index2] = holder2
-  origNML[[index3]][index4] = holder3
-  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
+  orig_nml[[index1]][index2] = holder2
+  orig_nml[[index3]][index4] = holder3
+  write_nml(orig_nml, paste0(working_glm,'/','glm3.nml'))
   return(list(depths,init_temps))
 }
 
 
-update_var <- function(var_value,var_name,workingGLM){
-  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
+update_var <- function(var_value,var_name,working_glm){
+  orig_nml = read_nml(paste0(working_glm,'/','glm3.nml'))
   index1 = NA; index2 = NA
-  for (g in 1:length(origNML)) {
-    for (q in 1:length(origNML[[g]])) {
-      if (names(origNML[[g]][q]) == var_name) {
+  for (g in 1:length(orig_nml)) {
+    for (q in 1:length(orig_nml[[g]])) {
+      if (names(orig_nml[[g]][q]) == var_name) {
         index1 = g; index2 = q; 
       }
     }
   }
-  holder2 = unlist(origNML[[index1]][index2])
+  holder2 = unlist(orig_nml[[index1]][index2])
   holder2[1:length(var_value)] = var_value
   holder2 = list(holder2[1:length(var_value)])
-  origNML[[index1]][index2] = holder2
-  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
+  orig_nml[[index1]][index2] = holder2
+  write_nml(orig_nml, paste0(working_glm,'/','glm3.nml'))
 }
 
-update_time <- function(start_value,stop_value,workingGLM){
-  origNML = read_nml(paste0(workingGLM,'/','glm3.nml'))
+update_time <- function(start_value,stop_value,working_glm){
+  orig_nml = read_nml(paste0(working_glm,'/','glm3.nml'))
   index1 = NA; index2 = NA; index3 = NA; index4 = NA
-  for (g in 1:length(origNML)) {
-    for (q in 1:length(origNML[[g]])) {
-      if (names(origNML[[g]][q]) == 'start') {
+  for (g in 1:length(orig_nml)) {
+    for (q in 1:length(orig_nml[[g]])) {
+      if (names(orig_nml[[g]][q]) == 'start') {
         index1 = g; index2 = q; 
       }
-      if (names(origNML[[g]][q]) == 'stop') {
+      if (names(orig_nml[[g]][q]) == 'stop') {
         index3 = g; index4 = q; 
       }
     }
   }
-  origNML[[index1]][index2] = start_value
-  origNML[[index3]][index4] = stop_value
-  write_nml(origNML, paste0(workingGLM,'/','glm3.nml'))
+  orig_nml[[index1]][index2] = start_value
+  orig_nml[[index3]][index4] = stop_value
+  write_nml(orig_nml, paste0(working_glm,'/','glm3.nml'))
 }
 
 get_glm_nc_var <- function(ncFile,z_out,var = 'temp'){
@@ -73,8 +73,6 @@ get_glm_nc_var <- function(ncFile,z_out,var = 'temp'){
   elev <- ncvar_get(glm_nc, "z")
   temp <- ncvar_get(glm_nc, var)
   nc_close(glm_nc)
-  
-  
   
   elev_surf = get_surface_height(ncFile)
   
@@ -105,7 +103,7 @@ update_phyto <- function(p_initial,nml_name = 'aed2_phyto_pars.nml'){
   if(length(p_initial)<6){
     print('number of phyto group does not equal 6')
   }   
-  nml_file <- paste0(workingGLM,'/',nml_name)
+  nml_file <- paste0(working_glm,'/',nml_name)
   c <- file(nml_file, "r")
   fileLines <- readLines(c)
   close(c)
@@ -153,15 +151,16 @@ get_glm_nc_var_all_wq <- function(ncFile,z_out,vars){
   output <- array(NA,dim=c(num_dep,length(vars)))
   for(v in 1:length(vars)){
     temp <- ncvar_get(glm_nc, vars[v])
-
-      temp <- temp[1:max_i, length(tallest_layer)]
-      temps = temp
-      temps_re <- c(temps[1], temps, tail(temps,1))
-      if(length(which(is.na(c(temps_re)))) == 0){
+    
+    temp <- temp[1:max_i, length(tallest_layer)]
+    temps = temp
+    temps_re <- c(temps[1], temps, tail(temps,1))
+    if(length(which(is.na(c(temps_re)))) == 0){
       output[,v] <- approx(x = elevs_re, y = temps_re, xout = elevs_out)$y
     }
     
   }
   nc_close(glm_nc)
-  return(list(output = output,surface_height = elev_surf[2,length(tallest_layer)]))
+  return(list(output = output,
+              surface_height = elev_surf[2,length(tallest_layer)]))
 }

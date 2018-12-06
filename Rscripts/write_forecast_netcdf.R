@@ -1,4 +1,4 @@
-write_forecast_netcdf <- function(x,full_time,Qt,modeled_depths,save_file_name,x_restart,Qt_restart,time_of_forecast,hist_days,x_prior,
+write_forecast_netcdf <- function(x,full_time,qt,modeled_depths,save_file_name,x_restart,qt_restart,time_of_forecast,hist_days,x_prior,
                                   include_wq,wq_start,wq_end,par1,par2,par3,z,nstates,npars){
   
   obs <- z
@@ -32,7 +32,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,modeled_depths,save_file_name,x
   
   #Define dims
   ensdim <- ncdim_def("ens",units = "",vals = ens, longname = 'ensemble member') 
-  depthdim <- ncdim_def("z",units = "meters",vals = as.double(depth), longname = 'Depth from surface') 
+  depthdim <- ncdim_def("z",units = "meters",vals = as.double(depths), longname = 'Depth from surface') 
   timedim <- ncdim_def("time",units = 'seconds', longname = 'seconds since 1970-01-01 00:00.00 UTC',vals = t)
   statedim <- ncdim_def("states",units = '', vals = states)
   stateagudim <- ncdim_def("states_aug",units = '', vals = states_aug)
@@ -55,7 +55,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,modeled_depths,save_file_name,x
   dlname <- 'Kw'
   par3_def <- ncvar_def("Kw","unitless",list(timedim,ensdim),fillvalue,dlname,prec="single")
   dlname <- 'restart covariance matrix'
-  Qt_restart_def <- ncvar_def("Qt_restart","-",list(statedim,statedim),fillvalue,dlname,prec="float")
+  qt_restart_def <- ncvar_def("qt_restart","-",list(statedim,statedim),fillvalue,dlname,prec="float")
   dlname <- 'matrix for restarting EnKF'
   x_def <- ncvar_def("x_restart","-",list(ensdim,stateagudim),fillvalue,dlname,prec="float")
   dlname <- 'Predicted states prior to Kalman correction'
@@ -142,7 +142,7 @@ write_forecast_netcdf <- function(x,full_time,Qt,modeled_depths,save_file_name,x
   
   ncvar_put(ncout,x_prior_def,as.matrix(x_prior))
   
-  #ncvar_put(ncout,Qt_restart_def,as.matrix(Qt_restart))
+  #ncvar_put(ncout,qt_restart_def,as.matrix(qt_restart))
   
   ncvar_put(ncout,obs_def,obs)
   

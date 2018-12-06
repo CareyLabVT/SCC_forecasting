@@ -1,62 +1,66 @@
 if (!"mvtnorm" %in% installed.packages()) install.packages("mvtnorm")
 if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4")
 if (!"lubridate" %in% installed.packages()) install.packages("lubridate")
-if (!"glmtools" %in% installed.packages()) install.packages('glmtools', repos=c('http://cran.rstudio.com', 'http://owi.usgs.gov/R'))
+if (!"glmtools" %in% installed.packages()) install.packages("glmtools",
+                                                            repos=c("http://cran.rstudio.com",
+                                                                    "http://owi.usgs.gov/R"))
+if (!"RCurl" %in% installed.packages()) install.packages("RCurl")
+if (!"testit" %in% installed.packages()) install.packages("testit")
 library(mvtnorm)
 library(glmtools)
 library(ncdf4)
 library(lubridate)
+library(RCurl)
+library(testit)
 
-Folder = getwd()
+folder <- "/Users/quinn/Dropbox/Research/SSC_forecasting/SSC_forecasting/"
+forecast_location <- "/Users/quinn/Dropbox/Research/SSC_forecasting/GLEON_AGU_2018/" 
+data_location <- "/Users/quinn/Dropbox/Research/SSC_forecasting/SCC_data/" 
+start_day <- "2018-10-02 00:00:00"
+forecast_start_day <- "2018-10-08 00:00:00"
+restart_file <- "/Users/quinn/Dropbox/Research/SSC_forecasting/GLEON_AGU_2018/FCR_betaV2_hist_2018_10_1_forecast_2018_10_2_2018102_5_53.nc"
+spin_up_days <- 0
+num_forecast_days <- 0  #Set to NA if running into future
+push_to_git <- FALSE
+reference_tzone <- "GMT"
+n_enkf_members <- 50
+include_wq <- FALSE
+use_ctd <- FALSE
+source(paste0(folder,"/","Rscripts/EnKF_GLM_wNOAAens_V2.R"))
+source(paste0(folder,"/","Rscripts/evaluate_forecast.R"))
+source(paste0(folder,"/","Rscripts/plot_forecast_management.R"))
+source(paste0(folder,"/","Rscripts/plot_forecast_netcdf.R"))
 
-source(paste0(Folder,'/','Rscripts/EnKF_GLM_wNOAAens_V2.R'))
-source(paste0(Folder,'/','Rscripts/evaluate_forecast.R'))
+sim_name <- "test" 
+start_day <- "2018-07-12 00:00:00"
+forecast_start_day <-"2018-07-16 00:00:00" 
+hist_days <- as.numeric(difftime(as.POSIXct(forecast_start_day, tz = reference_tzone),
+                                 as.POSIXct(start_day, tz = reference_tzone)))
 
-## EXAMPLE LAUCHING A FORECAST
-out <- run_forecast(
-  first_day = '2018-07-15 00:00:00',
-  sim_name = NA, 
-  hist_days = 1,
-  forecast_days = 15,
+out <- run_enkf_forecast(
+  start_day= start_day,
+  sim_name = sim_name, 
+  hist_days = hist_days,
+  forecast_days = 0,
+  spin_up_days = 0,
   restart_file = NA,
-  Folder = Folder,
-  forecast_location = NA
-  )
+  folder = folder,
+  forecast_location = forecast_location,
+  push_to_git=push_to_git,
+  data_location = data_location,
+  n_enkf_members = 1,
+  include_wq = include_wq,
+  use_ctd = use_ctd,
+  uncert_mode = 1,
+  cov_matrix = "Qt_cov_matrix_11June_14Aug2_18.csv",
+  alpha = c(0.5, 0.5, 0.9))
 
-## EXAMPLE EVALUATING FORECAST AFTER TIME HAS PAST
-evaluate_forecast(
-  forecast_folder = 'forecast_2018_7_6_2018726_12_9',
-  Folder = Folder,
-  sim_name = '2018_7_6'
-)
 
-## EXAMPLE EVALUATING FORECAST AFTER TIME HAS PAST USING THE WHAT IS RETURNED FROM RUN_FORECAST.R
-evaluate_forecast(
-  forecast_folder = unlist(out)[3],
-  Folder = Folder,
-  sim_name = unlist(out)[2],
-  forecast_location = NA 
-)
-
-## EXAMPLE OF LAUCHING A FORECAST FROM A PREVIOUS STEP THROUGH THE ENKF
-
-#INIITIAL LAUNCH
-out <- run_forecast(
-  first_day= '2018-07-06 00:00:00',
-  sim_name = NA, 
-  hist_days = 1,
-  forecast_days = 1,
-  restart_file = NA,
-  Folder = Folder,
-  forecast_location = NA
-)
-
-#SUBSEQUENT DAYS LAUNCH
-restart_file_name <- run_forecast(first_day= '2018-07-07 00:00:00',
-  sim_name = NA, 
-  hist_days = 1,
-  forecast_days = 8,
-  restart_file = paste0(Folder,'/','Forecasts','/',unlist(out)[3],'/',unlist(out)[1]),
-  Folder = Folder,
-  forecast_location = NA
-)
+plot_forecast_netcdf(pdf_file_name = paste0(unlist(out)[2], ".pdf"),
+                     output_file = unlist(out)[1],
+                     include_wq = include_wq,
+                     code_location = paste0(folder, "/Rscripts/"),
+                     save_location = forecast_location,
+                     data_location = data_location,
+                     plot_summaries = FALSE,
+                     use_ctd = use_ctd)

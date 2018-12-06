@@ -1,4 +1,4 @@
-plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries,PRE_SCC,push_to_git, USE_CTD){
+plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,include_wq,code_location,save_location,data_location,plot_summaries,pre_scc,push_to_git, use_ctd){
   library(ncdf4)
   library(lubridate)
   
@@ -57,7 +57,7 @@ plot_forecast_management <- function(pdf_file_name,output_file,catwalk_fname,inc
   obs_chla_fdom <- extract_chla_chain(fname = catwalk_fname,full_time = full_time_past,depths = the_depths_init,observed_depths_chla_fdom= Chla_fDOM_ObservedDepths,input_tz = 'EST5EDT', output_tz = reference_tzone)
   
   #Use the CTD observation rather than the sensor string when CTD data is avialable
-  if(USE_CTD){
+  if(use_ctd){
     ## LOOK AT CTD DATA
     fl <- c(list.files('/Users/quinn/Dropbox (VTFRS)/Research/SSC_forecasting/SCC_data/preSCC/', pattern = 'CTD', full.names = TRUE))
     obs_ctd <- extract_temp_CTD(fname = fl[1],full_time_day,depths = the_depths_init,input_tz = 'EST5EDT', output_tz = reference_tzone)
