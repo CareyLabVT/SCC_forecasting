@@ -1,3 +1,11 @@
+#----------------------------------------------------------#
+# Program name: run_enkf_forecast                          #
+# Author: R. Quinn Thomas, rqthomas@vt.edu                 #
+# Purpose: Sets up and launches the ensemble Kalman Filter #
+#          Downloads and process model inputs and sensor   #
+#          observations                                    #
+# ---------------------------------------------------------#
+
 run_enkf_forecast<-function(start_day= "2018-07-06 00:00:00", 
                        sim_name = NA, 
                        hist_days = 1,
@@ -14,7 +22,11 @@ run_enkf_forecast<-function(start_day= "2018-07-06 00:00:00",
                        uncert_mode = 1,
                        cov_matrix = NA,
                        alpha = c(0.5,0.5,0.5)){
-  ###R FUNCTIONS
+  
+  #################################################
+  ### LOAD R FUNCTIONS
+  #################################################
+  
   source(paste0(folder,"/","Rscripts/mcmc_enkf_shared_functions.R"))
   source(paste0(folder,"/","Rscripts/create_obs_met_input.R"))
   source(paste0(folder,"/","Rscripts/extract_temp_chain.R"))
