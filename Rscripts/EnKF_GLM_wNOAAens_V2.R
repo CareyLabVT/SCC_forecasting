@@ -145,7 +145,7 @@ run_forecast<-function(first_day= '2018-07-06 00:00:00', sim_name = NA, hist_day
     out_directory <- workingGLM
     file_name <- forecast_base_name
     #NEED TO DOUBLE CHECK THE INPUT_TZ AND WHY IT IS EST
-    process_GEFS2GLM(in_directory,out_directory,file_name, input_tz = 'EST5EDT', output_tz = reference_tzone)
+    process_GEFS2GLM(in_directory,out_directory,file_name, input_tz = 'GMT', output_tz = reference_tzone)
     met_file_names <- rep(NA,nMETmembers)
     for(i in 1:nMETmembers){
       met_file_names[i] <- paste0(met_base_file_name,i,'.csv')
